@@ -3438,6 +3438,7 @@ def render_masthead() -> None:
             
     logo_b64 = get_base64_image("logo.jpg")
     glyph_content = f'<img src="data:image/jpeg;base64,{logo_b64}">' if logo_b64 else 'A'
+    replacement_img = '<img style="width: 100%; height: 100%; object-fit: cover;" '
     fancy_glyph_content = (
         '<div class="fancy-logo-wrapper">'
         '<div style="position: absolute; inset: 0; border-radius: 36px; padding: 3px; background: conic-gradient(from 0deg, #38BDF8, rgba(56,189,248,0.05) 25%, #10B981, rgba(16,185,129,0.05) 75%, #38BDF8); animation: spin 5s linear infinite; box-shadow: 0 0 60px rgba(56, 189, 248, 0.4), inset 0 0 20px rgba(16, 185, 129, 0.2);">'
@@ -3445,7 +3446,7 @@ def render_masthead() -> None:
         '<div style="position: absolute; inset: -20px; border-radius: 46px; border: 1px dashed rgba(56, 189, 248, 0.3); animation: spin 15s linear infinite reverse; z-index: 0;"></div>'
         '<div style="position: absolute; inset: -10px; border-radius: 40px; border: 1px solid rgba(16, 185, 129, 0.2); animation: spin 10s linear infinite; z-index: 0;"></div>'
         '<div style="position: relative; z-index: 2; width: 94%; height: 94%; border-radius: 28px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #0F172A; box-shadow: inset 0 0 40px rgba(0,0,0,0.8);">'
-        f"{glyph_content.replace('<img ', '<img style=\"width: 100%; height: 100%; object-fit: cover;\" ')}</div></div>"
+        + glyph_content.replace('<img ', replacement_img) + '</div></div>'
     ) if logo_b64 else 'A'
 
     st.markdown(f"""
