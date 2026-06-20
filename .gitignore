@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.sentinel_cache.json
+error_log.txt
+test_js.py
+.env
+.streamlit/secrets.toml

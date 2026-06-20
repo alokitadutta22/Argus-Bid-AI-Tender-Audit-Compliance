@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case Studies — Argus Bid AI Tender Audit & Compliance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B1220; --panel:#111A2B; --panel2:#16213A; --line:#243049;
+  --muted:#8A99B5; --text:#E8EEF8; --blue:#3B82F6; --blue-dk:#1D4ED8;
+  --green:#10B981; --amber:#F59E0B; --red:#EF4444;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;font-family:var(--sans);color:var(--text);line-height:1.6;
+  background:radial-gradient(1200px 560px at 82% -8%,rgba(59,130,246,.10),transparent 60%),var(--ink);
+  -webkit-font-smoothing:antialiased;}
+a{color:var(--blue);text-decoration:none;}
+a:hover{text-decoration:underline;}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px;}
+
+/* Removed landing-navbar CSS since we're using a Back to Overview button instead */
+
+.pagehead {
+    position: relative;
+    z-index: 100;
+    padding: 60px 0 50px;
+    margin-bottom: 40px;
+    background: radial-gradient(circle at 10% 0%, rgba(139, 92, 246, 0.08), transparent 50%),
+                radial-gradient(circle at 90% 100%, rgba(196, 181, 253, 0.05), transparent 50%),
+                linear-gradient(180deg, #020617 0%, #0A1322 100%);
+    border-bottom: 1px solid rgba(139, 92, 246, 0.15);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+.pagehead::before {
+    content: '';
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: 0;
+}
+.pagehead .wrap { position: relative; z-index: 2; }
+.eyebrow-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #38BDF8;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 12px rgba(56, 189, 248, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.eyebrow-tag::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.2), transparent);
+  transform: skewX(-20deg);
+  animation: eyebrowSweep 5s infinite;
+}
+@keyframes eyebrowSweep {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+.eyebrow-tag:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.2), inset 0 0 16px rgba(56, 189, 248, 0.1);
+  transform: translateY(-2px);
+  color: #7DD3FC;
+}
+.pagehead h1{font-size:clamp(30px,4.4vw,46px);line-height:1.06;font-weight:900;letter-spacing:-1.2px;margin:0 0 8px;}
+.pagehead p{font-size:17px;color:#B7C2D8;max-width:66ch;margin:0;}
+
+.disclaimer{display:flex;gap:12px;align-items:flex-start;background:var(--panel);border:1px solid var(--line);
+  border-left:3px solid var(--amber);border-radius:12px;padding:14px 16px;margin:16px 0 4px;font-size:13.5px;color:#C7D3EA;}
+.disclaimer b{color:var(--text);}
+
+/* context strip */
+.context{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:26px 0 8px;}
+.ctx{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:15px 16px;}
+.ctx .l{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);}
+.ctx .v{font-size:15px;font-weight:700;margin-top:5px;}
+.ctx .v.mono{font-family:var(--mono);font-size:13px;color:var(--blue);}
+
+/* case study */
+.cs{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:0;margin:22px 0;overflow:hidden;}
+.cs-head{display:flex;align-items:flex-start;gap:18px;padding:24px 26px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;}
+.cs-tag{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;}
+.cs-head h2{font-size:22px;font-weight:800;letter-spacing:-.5px;margin:4px 0 2px;}
+.cs-head .who{color:var(--muted);font-size:13.5px;}
+.cs-verdict{margin-left:auto;text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px;}
+.scorebig{font-size:34px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.scorebig.g{color:var(--green);} .scorebig.r{color:var(--red);} .scorebig.b{color:var(--blue);}
+.rankline{font-family:var(--mono);font-size:12px;color:var(--muted);}
+
+.cs-body{padding:22px 26px 26px;}
+.cs-body h3{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:700;margin:16px 0 6px;}
+.cs-body h3:first-child{margin-top:0;}
+.cs-body p{color:#C7D3EA;margin:6px 0;}
+.findings{list-style:none;padding:0;margin:8px 0;}
+.findings li{display:flex;gap:11px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;color:#C7D3EA;}
+.findings li:last-child{border-bottom:none;}
+.findings .ic{flex:0 0 auto;width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font-size:14px;font-weight:800;margin-top:0px;}
+.ic.g{background:linear-gradient(135deg,rgba(16,185,129,.15),rgba(16,185,129,.05));color:var(--green);border:1px solid rgba(16,185,129,.3);} 
+.ic.r{background:linear-gradient(135deg,rgba(239,68,68,.15),rgba(239,68,68,.05));color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.ic.a{background:linear-gradient(135deg,rgba(245,158,11,.15),rgba(245,158,11,.05));color:var(--amber);border:1px solid rgba(245,158,11,.3);} 
+.ic.b{background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(59,130,246,.05));color:var(--blue);border:1px solid rgba(59,130,246,.3);}
+.evidence{font-family:var(--mono);font-size:12px;line-height:1.65;background:#0A1322;border:1px solid var(--line);
+  border-left:3px solid var(--blue);border-radius:9px;padding:12px 14px;color:#C7D3EA;white-space:pre-wrap;margin:8px 0;}
+.evidence.bad{border-left-color:var(--red);} .evidence.ok{border-left-color:var(--green);}
+.takeaway{background:linear-gradient(135deg,rgba(59,130,246,.09),transparent);border:1px solid rgba(59,130,246,.3);
+  border-radius:12px;padding:15px 17px;margin-top:18px;font-size:14px;line-height:1.7;color:#D7E0F2;}
+.takeaway b{color:var(--text);}
+.chip{font-family:var(--mono);font-size:11.5px;padding:3px 9px;border-radius:7px;display:inline-block;}
+.chip.lack{background:rgba(245,158,11,.14);color:var(--amber);border:1px solid rgba(245,158,11,.35);}
+
+.pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-family: var(--sans);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    margin-left: 6px;
+}
+.pill::before {
+    content: '';
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.pill.bad {
+    background: linear-gradient(90deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+    color: #F87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.1);
+}
+.pill.bad::before {
+    background: #EF4444;
+    box-shadow: 0 0 6px rgba(239, 68, 68, 0.8);
+}
+.pill.warn {
+    background: linear-gradient(90deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+    color: #FBBF24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.1);
+}
+.pill.warn::before {
+    background: #F59E0B;
+    box-shadow: 0 0 6px rgba(245, 158, 11, 0.8);
+}
+
+/* outcome summary */
+.summary{margin:36px 0 10px;}
+.summary h2{font-size:20px;font-weight:800;letter-spacing:-.4px;margin:0 0 10px;}
+.sumtable{width:100%;border-collapse:collapse;margin:16px 0;border:1px solid var(--line);border-radius:8px;background:var(--panel);overflow:hidden;}
+.sumtable th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;padding:12px 16px;font-weight:600;border-bottom:1px solid var(--line);background:rgba(15,23,42,0.4);}
+.sumtable td{border-bottom:1px solid var(--line);padding:14px 16px;font-size:14px;background:transparent;}
+.sumtable tr:last-child td{border-bottom:none;}
+.sumtable tr td:first-child{font-weight:700;border-left:none;}
+.sumtable tr td:last-child{border-right:none;}
+.sumtable tr{transition:background .2s;}
+.sumtable tr:hover td{background:rgba(59,130,246,.05);}
+.sumtable tr.dq td{background:rgba(239,68,68,.06);}
+
+.badge-glow {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 8px; font-size: 11.5px; font-weight: 800;
+    letter-spacing: 0.5px; border: 1px solid transparent; text-transform: uppercase;
+}
+.badge-glow svg { flex-shrink: 0; opacity: 0.9; }
+.bg-ok { background: linear-gradient(90deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); color: #34D399; border-color: rgba(16,185,129,0.3); box-shadow: 0 0 12px rgba(16,185,129,0.1); }
+.bg-bad { background: linear-gradient(90deg, rgba(239,68,68,0.15), rgba(239,68,68,0.05)); color: #F87171; border-color: rgba(239,68,68,0.3); box-shadow: 0 0 12px rgba(239,68,68,0.1); }
+
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin:30px 0 10px;}
+.btn{font-weight:700;font-size:14px;border-radius:11px;padding:13px 20px;display:inline-flex;align-items:center;gap:8px;}
+.btn.primary{background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;box-shadow:0 10px 28px rgba(59,130,246,.32);}
+.btn.primary:hover{filter:brightness(1.08);text-decoration:none;}
+.btn.ghost{background:var(--panel);color:var(--text);border:1px solid var(--line);}
+.btn.ghost:hover{border-color:var(--blue);text-decoration:none;}
+
+footer{border-top:1px solid var(--line);padding:28px 0 50px;color:var(--muted);font-size:13px;margin-top:24px;}
+footer .row{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+
+@media (max-width:820px){
+  .context{grid-template-columns:repeat(2,1fr);}
+  .cs-verdict{margin-left:0;text-align:left;align-items:flex-start;}
+  .topnav a:not(.active){display:none;}
+}
+@media (max-width:600px){
+  .context{grid-template-columns:1fr;}
+  .cs-head{flex-direction:column;gap:12px;}
+  .pagehead h1{font-size:clamp(36px,8vw,48px) !important;}
+  .sumtable{display:block;overflow-x:auto;white-space:nowrap;}
+}
+</style>
+</head>
+<body>
+
+<div class="pagehead"><div class="wrap">
+  <div class="eyebrow-tag" style="color: #C4B5FD; border-color: rgba(139, 92, 246, 0.3); box-shadow: 0 4px 15px rgba(0,0,0,0.3), inset 0 0 12px rgba(139, 92, 246, 0.1);">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+    REAL-WORLD SCENARIOS
+  </div>
+  <h1 style="font-size: clamp(48px, 6vw, 64px); font-weight: 900; letter-spacing: -1.5px; background: linear-gradient(120deg, #FFFFFF, #94A3B8); -webkit-background-clip: text; color: transparent; margin: 0 0 8px; text-shadow: 0 0 30px rgba(255,255,255,0.1);">
+    Argus <span style="background: linear-gradient(120deg, #C4B5FD, #8B5CF6); -webkit-background-clip: text; color: transparent;">Case Studies</span>
+  </h1>
+  <h2 style="font-size: 24px; line-height: 1.5; font-weight: 400; color: #94A3B8; margin: 0 0 20px; max-width: 800px;">
+    The clearest way to understand Argus Bid AI is to watch it evaluate a real-shaped tender. <strong style="color: #E2E8F0; font-weight: 600;">Three submissions, one tender, three outcomes.</strong>
+  </h2>
+  <div class="disclaimer" style="margin-bottom: 32px;">
+    <span>&#9888;</span>
+    <span><b>Illustrative scenarios.</b> These walkthroughs use Argus Bid AI's built-in demonstration corpus —
+    a representative networking-equipment tender and three sample vendor profiles. Vendor names stand in
+    for archetypes and the figures are produced by running the actual engine on sample documents, not
+    drawn from any live procurement record.</span>
+  </div>
+  
+  <div style="display: flex; gap: 20px; align-items: center;">
+      <a href="?page=home" target="_self" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; color: #0F172A; background: linear-gradient(120deg, #A78BFA, #DDD6FE); box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.4); text-decoration: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;" onmouseover="this.style.boxShadow='0 8px 25px rgba(139, 92, 246, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.boxShadow='0 4px 15px rgba(139, 92, 246, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.4)'; this.style.transform='translateY(0)';">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Dashboard
+      </a>
+      <div style="font-family: var(--mono); font-size: 11.5px; color: #475569; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px; line-height: 1.6; letter-spacing: 0.5px;">
+        EVALUATION ENGINE <br><span style="color: #8B5CF6; font-weight: 700;">&#x25CF; DEMO CORPUS</span>
+      </div>
+  </div>
+</div></div>
+
+<div class="wrap">
+
+  <div class="context">
+    <div class="ctx"><div class="l">Tender</div><div class="v mono">IOCL/HR/IT/2026/NW-4471</div></div>
+    <div class="ctx"><div class="l">Category</div><div class="v">Managed L3 network switches</div></div>
+    <div class="ctx"><div class="l">Vendors evaluated</div><div class="v">3 submissions</div></div>
+    <div class="ctx"><div class="l">Weighting</div><div class="v">70% mandatory &middot; 30% preferred</div></div>
+  </div>
+
+  <!-- CASE 1 -->
+  <article class="cs">
+    <div class="cs-head">
+      <div>
+        <div class="cs-tag">Case study 01 &middot; the clean winner</div>
+        <h2>The bid that left nothing to interpret</h2>
+        <div class="who">Vendor archetype: established OEM partner with a complete, well-ordered submission.</div>
+      </div>
+      <div class="cs-verdict">
+        <div class="scorebig g">100%</div>
+        <div class="rankline">Rank 1</div>
+        <span class="badge-glow bg-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Responsive</span>
+      </div>
+    </div>
+    <div class="cs-body">
+      <h3>The situation</h3>
+      <p>The vendor submitted eight documents, including a Manufacturer's Authorization Form, a technical
+      datasheet, all mandatory statutory papers, and an experience certificate. Filenames were tidy but
+      Argus Bid AI classified by content regardless.</p>
+
+      <h3>What the engine found</h3>
+      <ul class="findings">
+        <li><span class="ic g">&#10003;</span><div><b>MAF valid.</b> Authorization confirmed on OEM letterhead, citing the correct Tender ID.</div></li>
+        <li><span class="ic g">&#10003;</span><div><b>All pre-qualification thresholds met</b> — experience, turnover, and registration all clear.</div></li>
+        <li><span class="ic g">&#10003;</span><div><b>All six mandatory specs met</b>, several exceeded (throughput and warranty well above the floor).</div></li>
+        <li><span class="ic g">&#10003;</span><div><b>All four preferred features present</b> — stacking, IPv6, MACsec, and an extended warranty beyond 36 months.</div></li>
+      </ul>
+
+      <div class="evidence ok">MAF gate &mdash; PASSED
+Authorization confirmed on OEM letterhead and references the correct
+Tender No. "IOCL/HR/IT/2026/NW-4471".</div>
+
+      <div class="takeaway"><b>Why it matters:</b> a complete, compliant bid should sail through, and it
+      does — full 70 on mandatory specs, full 30 on preferred, a clean 100%. The value here is not the
+      verdict but the <b>speed and the paper trail</b>: every "met" is backed by extracted evidence a
+      reviewer can open in seconds.</div>
+    </div>
+  </article>
+
+  <!-- CASE 2 -->
+  <article class="cs">
+    <div class="cs-head">
+      <div>
+        <div class="cs-tag">Case study 02 &middot; the responsive runner-up</div>
+        <h2>Eligible, competitive, and beaten on the margins</h2>
+        <div class="who">Vendor archetype: strong, fully eligible bidder that simply offers less on the optional features.</div>
+      </div>
+      <div class="cs-verdict">
+        <div class="scorebig b">85%</div>
+        <div class="rankline">Rank 2</div>
+        <span class="badge-glow bg-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Responsive</span>
+      </div>
+    </div>
+    <div class="cs-body">
+      <h3>The situation</h3>
+      <p>A genuinely competitive vendor: a valid MAF, every statutory document, and all six mandatory
+      specs met. The gap to first place is entirely in the preferred features.</p>
+
+      <h3>What the engine found</h3>
+      <ul class="findings">
+        <li><span class="ic g">&#10003;</span><div><b>MAF valid</b> and all eligibility gates cleared — fully responsive.</div></li>
+        <li><span class="ic g">&#10003;</span><div><b>All six mandatory specs met</b> — the full 70 points.</div></li>
+        <li><span class="ic a">!</span><div><b>MACsec encryption not stated</b> — recorded as <span class="chip lack">[DATA LACKING]</span>, so it cannot be credited.</div></li>
+        <li><span class="ic r">&times;</span><div><b>Warranty exactly 36 months</b> — meets the mandatory floor, but does not earn the "beyond 36 months" preferred bonus.</div></li>
+      </ul>
+
+      <h3>How Argus Bid AI explained the ranking</h3>
+      <div class="evidence">Rank 1 (100%) edges out Rank 2 (85%) by 15 points.
+Decisive factors: Rank 1 satisfied "MACsec Encryption" while Rank 2
+did not ([DATA LACKING]); Rank 1 satisfied "Extended OEM Warranty
+(>36m)" (60 months) while Rank 2 did not (36 months). On preferred
+features the leader met 4 vs 2 — the 30% preferred weighting separates them.</div>
+
+      <div class="takeaway"><b>Why it matters:</b> this is where evaluations get challenged. The runner-up
+      did nothing wrong — it lost 15 points on two named, evidenced preferred features. Because the engine
+      records <b>exactly which parameters separated the two ranks</b>, the committee can answer a vendor's
+      "why did we come second?" in one sentence. Note too that a blank field becomes
+      <span class="chip lack">[DATA LACKING]</span>, never a silent assumption in the vendor's favour.</div>
+    </div>
+  </article>
+
+  <!-- CASE 3 -->
+  <article class="cs">
+    <div class="cs-head">
+      <div>
+        <div class="cs-tag">Case study 03 &middot; the disqualification</div>
+        <h2>Removed by the gates, before merit was ever scored</h2>
+        <div class="who">Vendor archetype: incomplete submission with a poor scan and an explicit deviation.</div>
+      </div>
+      <div class="cs-verdict">
+        <div class="scorebig r">0%</div>
+        <div class="rankline">Not ranked</div>
+        <span class="badge-glow bg-bad"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Disqualified</span>
+      </div>
+    </div>
+    <div class="cs-body">
+      <h3>The situation</h3>
+      <p>Four documents, untidy filenames, one of them a low-quality scan. On a fast manual pass this bid
+      might survive to scoring; Argus Bid AI's gates catch the eligibility failures immediately.</p>
+
+      <h3>What the engine found</h3>
+      <ul class="findings">
+        <li><span class="ic r">&times;</span><div><b>No MAF</b> — no file classified as a Manufacturer's Authorization Form. <span class="pill bad">Missing</span></div></li>
+        <li><span class="ic r">&times;</span><div><b>Missing mandatory documents</b> — PAN card, GeM registration, and audited balance sheet absent.</div></li>
+        <li><span class="ic r">&times;</span><div><b>Pre-qualification failed</b> — turnover below the INR 5 Crore floor; no GeM registration.</div></li>
+        <li><span class="ic a">!</span><div><b>Low-quality GST scan</b> — readable enough to type, but flagged <span class="pill warn">Low-Quality</span> for human review.</div></li>
+        <li><span class="ic a">!</span><div><b>Explicit deviation detected</b> — the bid offers 45&deg;C-rated hardware against a 60&deg;C requirement.</div></li>
+      </ul>
+
+      <h3>The auditable disqualification log</h3>
+      <div class="evidence bad">DISQUALIFIED — reasons logged:
+1. Missing Mandatory Document — MAF
+2. Missing Mandatory Document — PAN Card
+3. Missing Mandatory Document — GeM Registration
+4. Missing Mandatory Document — Audited Balance Sheet
+5. Pre-Qualification Failure — Average Annual Turnover (&lt; INR 5 Cr)
+6. Pre-Qualification Failure — GeM Registration</div>
+
+      <div class="takeaway"><b>Why it matters:</b> eligibility comes before merit. Rather than scoring a
+      bid that can never be awarded, Argus Bid AI <b>removes it and records why</b>, in numbered, clause-linked
+      reasons. That log is the document that protects the evaluation if the disqualification is contested —
+      and the low-quality scan is surfaced rather than quietly trusted.</div>
+    </div>
+  </article>
+
+  <!-- OUTCOME -->
+  <section class="summary">
+    <h2>The tender at a glance</h2>
+    <table class="sumtable">
+      <thead><tr><th>Vendor archetype</th><th>Status</th><th>Score</th><th>Deciding factor</th></tr></thead>
+      <tbody>
+        <tr><td>Established OEM partner</td><td><span class="badge-glow bg-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Responsive</span></td><td>100% &middot; Rank 1</td><td>Met every mandatory and preferred parameter.</td></tr>
+        <tr><td>Competitive runner-up</td><td><span class="badge-glow bg-ok"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Responsive</span></td><td>85% &middot; Rank 2</td><td>Lost two preferred features (MACsec, extended warranty).</td></tr>
+        <tr class="dq"><td>Incomplete bidder</td><td><span class="badge-glow bg-bad"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Disqualified</span></td><td>&mdash;</td><td>Missing MAF + documents; failed pre-qualification.</td></tr>
+      </tbody>
+    </table>
+    <p style="color:var(--muted);font-size:13.5px;margin-top:14px;">Across the three, the pattern is the
+    point: identical rules applied to every vendor, eligibility settled before merit, and a written reason
+    behind every line. Run the same corpus yourself on the live audit page and you will get these numbers
+    every time.</p>
+
+  </section>
+
+</div>
+
+<footer><div class="wrap row">
+  <div>Argus Bid AI — AI-Driven Tender Auditing &amp; Compliance.</div>
+  <div>Illustrative scenarios on a representative demonstration corpus.</div>
+</div></footer>
+
+</body>
+</html>

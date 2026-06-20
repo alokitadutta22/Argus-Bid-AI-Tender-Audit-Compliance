@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Documentation — Argus Bid AI Tender Audit & Compliance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B1220; --panel:#111A2B; --panel2:#16213A; --line:#243049;
+  --muted:#8A99B5; --text:#E8EEF8; --blue:#3B82F6; --blue-dk:#1D4ED8;
+  --green:#10B981; --amber:#F59E0B; --red:#EF4444;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{margin:0;font-family:var(--sans);color:var(--text);line-height:1.6;
+  background:radial-gradient(1200px 560px at 82% -8%,rgba(59,130,246,.10),transparent 60%),var(--ink);
+  -webkit-font-smoothing:antialiased;}
+a{color:var(--blue);text-decoration:none;}
+a:hover{text-decoration:underline;}
+.wrap{max-width:1240px;margin:0 auto;padding:0 24px;}
+
+/* Removed landing-navbar CSS since we're using a Back to Overview button instead */
+
+/* page head */
+.pagehead {
+    position: relative;
+    z-index: 100;
+    padding: 60px 0 50px;
+    margin-bottom: 40px;
+    background: radial-gradient(circle at 10% 0%, rgba(56, 189, 248, 0.08), transparent 50%),
+                radial-gradient(circle at 90% 100%, rgba(16, 185, 129, 0.05), transparent 50%),
+                linear-gradient(180deg, #020617 0%, #0A1322 100%);
+    border-bottom: 1px solid rgba(56, 189, 248, 0.15);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+.pagehead::before {
+    content: '';
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 30px 30px;
+    pointer-events: none;
+    z-index: 0;
+}
+.pagehead .wrap { position: relative; z-index: 2; }
+.eyebrow-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #38BDF8;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 12px rgba(56, 189, 248, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.eyebrow-tag::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.2), transparent);
+  transform: skewX(-20deg);
+  animation: eyebrowSweep 5s infinite;
+}
+@keyframes eyebrowSweep {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+.eyebrow-tag:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.2), inset 0 0 16px rgba(56, 189, 248, 0.1);
+  transform: translateY(-2px);
+  color: #7DD3FC;
+}
+.pagehead h1{margin:0;}
+.pagehead p{margin:0;}
+
+/* layout: toc + content */
+.layout{display:grid;grid-template-columns:232px 1fr;gap:46px;align-items:start;padding-bottom:60px;}
+.toc{position:sticky;top:32px;max-height:calc(100vh - 64px);overflow-y:auto;}
+.toc::-webkit-scrollbar { width: 4px; }
+.toc::-webkit-scrollbar-track { background: transparent; }
+.toc::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.2); border-radius: 4px; }
+.toc .lab{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:1px;
+  color:var(--muted);margin:0 0 12px;}
+.toc a{display:block;color:var(--muted);font-size:13.5px;padding:6px 0 6px 13px;border-left:2px solid var(--line);}
+.toc a:hover{color:var(--text);border-left-color:var(--blue);text-decoration:none;}
+.toc a.sub{padding-left:26px;font-size:12.5px;}
+.toc a.on{color:var(--text);border-left-color:var(--blue);}
+
+.content{min-width:0;}
+.content h2{font-size:23px;font-weight:800;letter-spacing:-.5px;margin:42px 0 6px;scroll-margin-top:310px;}
+.content h2:first-child{margin-top:0;}
+.content h2 .num{font-family:var(--mono);font-size:14px;color:var(--blue);margin-right:10px;}
+.content h3{font-size:16px;font-weight:700;margin:26px 0 6px;scroll-margin-top:310px;}
+.content p{color:#C7D3EA;margin:10px 0;}
+.content ul{color:#C7D3EA;margin:10px 0;padding-left:22px;}
+.content li{margin:6px 0;}
+.content .sectsub{color:var(--muted);font-size:14px;margin-top:2px;}
+hr.div{border:none;border-top:1px solid var(--line);margin:38px 0;}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 22px;margin:16px 0;}
+.card.tip{border-left:3px solid var(--green);}
+.card.note{border-left:3px solid var(--blue);}
+.card.warn{border-left:3px solid var(--amber);}
+.card h4{margin:0 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);font-weight:700;}
+.card p:last-child{margin-bottom:0;}
+
+code.inl{font-family:var(--mono);font-size:12.5px;background:var(--panel2);border:1px solid var(--line);
+  padding:2px 7px;border-radius:6px;color:#C7D3EA;}
+pre{background:#0A1322;border:1px solid var(--line);border-radius:11px;padding:16px 18px;overflow-x:auto;
+  font-family:var(--mono);font-size:12.5px;line-height:1.7;color:#C7D3EA;margin:14px 0;}
+pre .c{color:var(--muted);} pre .k{color:var(--blue);} pre .s{color:var(--green);}
+
+table.ref{width:100%;border-collapse:collapse;font-size:13.5px;margin:16px 0;}
+table.ref th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;
+  padding:9px 12px;border-bottom:1px solid var(--line);font-weight:600;}
+table.ref td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;color:#C7D3EA;}
+table.ref tr:last-child td{border-bottom:1px solid var(--line);}
+table.ref td:first-child{white-space:nowrap;}
+.chip{font-family:var(--mono);font-size:11.5px;padding:3px 9px;border-radius:7px;display:inline-block;}
+.chip.match{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.3);}
+.chip.fail{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.chip.lack{background:rgba(245,158,11,.14);color:var(--amber);border:1px solid rgba(245,158,11,.35);}
+
+.kbd{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);
+  border-bottom-width:2px;padding:2px 7px;border-radius:6px;color:#C7D3EA;}
+.steps{counter-reset:st;list-style:none;padding:0;margin:16px 0;}
+.steps li{counter-increment:st;position:relative;padding:4px 0 4px 40px;margin:10px 0;color:#C7D3EA;}
+.steps li::before{content:counter(st);position:absolute;left:0;top:2px;width:26px;height:26px;border-radius:8px;
+  background:var(--panel2);border:1px solid var(--line);color:var(--blue);font-family:var(--mono);font-size:13px;
+  display:grid;place-items:center;font-weight:600;}
+
+footer{border-top:1px solid var(--line);padding:28px 0 50px;color:var(--muted);font-size:13px;}
+footer .row{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;gap:22px;}
+  .toc-container{display:none;}
+  .topnav a:not(.active){display:none;}
+}
+@media (max-width:600px){
+  .pagehead h1{font-size:clamp(36px,8vw,48px) !important;}
+  table.ref{display:block;overflow-x:auto;white-space:nowrap;}
+}
+.toc-container {
+    position: sticky;
+    top: 32px;
+    max-height: calc(100vh - 64px);
+    overflow-y: auto;
+    padding: 24px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(56, 189, 248, 0.2);
+    border-radius: 16px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.toc-container::-webkit-scrollbar { width: 4px; }
+.toc-container::-webkit-scrollbar-track { background: transparent; }
+.toc-container::-webkit-scrollbar-thumb { background: rgba(56,189,248,0.3); border-radius: 4px; }
+.toc-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 20px 20px;
+    pointer-events: none;
+    border-radius: 16px;
+    z-index: 0;
+}
+.toc-container > * { position: relative; z-index: 2; }
+.toc-container .lab {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: #38BDF8;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin: 0 0 20px;
+    font-weight: 700;
+}
+#toc {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    border-left: 2px solid rgba(255,255,255,0.05);
+    padding-left: 16px;
+    margin-left: 8px;
+}
+#toc a { color: #94A3B8; text-decoration: none; font-size: 14.5px; font-weight: 500; transition: all 0.2s; position: relative; }
+#toc a:hover { color: #38BDF8; }
+#toc a.sub { padding-left: 12px; font-size: 13.5px; color: #64748B; }
+#toc a.sub:hover { color: #38BDF8; }
+/* active state class */
+#toc a.active { color: #E2E8F0; font-weight: 600; }
+#toc a.active::before {
+    content: '';
+    position: absolute;
+    left: -19px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #38BDF8;
+    border-radius: 2px;
+    box-shadow: 0 0 10px #38BDF8;
+}
+@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto;}}
+</style>
+</head>
+<body>
+
+<div class="pagehead"><div class="wrap">
+  <div class="eyebrow-tag">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+    SYSTEM MANUAL
+  </div>
+  <h1 style="font-size: clamp(48px, 6vw, 64px); font-weight: 900; letter-spacing: -1.5px; background: linear-gradient(120deg, #FFFFFF, #94A3B8); -webkit-background-clip: text; color: transparent; margin: 0 0 8px; text-shadow: 0 0 30px rgba(255,255,255,0.1);">
+    Argus <span style="background: linear-gradient(120deg, #38BDF8, #10B981); -webkit-background-clip: text; color: transparent;">Documentation</span>
+  </h1>
+  <h2 style="font-size: 24px; line-height: 1.5; font-weight: 400; color: #94A3B8; margin: 0 0 20px; max-width: 800px;">
+    A practical guide: how the platform <strong style="color: #E2E8F0; font-weight: 600;">parses a Notice Inviting Tender</strong>, inventories submissions, runs eligibility gates, and <strong style="color: #38BDF8; font-weight: 600;">scores the survivors</strong>.
+  </h2>
+  
+  <div style="display: flex; gap: 20px; align-items: center;">
+      <a href="?page=home" target="_self" style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 10px; font-weight: 600; font-size: 14px; color: #0F172A; background: linear-gradient(120deg, #38BDF8, #7DD3FC); box-shadow: 0 4px 15px rgba(56, 189, 248, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.4); text-decoration: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); cursor: pointer;" onmouseover="this.style.boxShadow='0 8px 25px rgba(56, 189, 248, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.boxShadow='0 4px 15px rgba(56, 189, 248, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.4)'; this.style.transform='translateY(0)';">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Dashboard
+      </a>
+      <div style="font-family: var(--mono); font-size: 11.5px; color: #475569; border-left: 1px solid rgba(255,255,255,0.1); padding-left: 20px; line-height: 1.6; letter-spacing: 0.5px;">
+        DETERMINISTIC ENGINE <br><span style="color: #10B981; font-weight: 700;">&#x25CF; ALWAYS ACTIVE</span>
+      </div>
+  </div>
+</div></div>
+
+<div class="wrap"><div class="layout">
+
+  <div class="toc-container">
+    <p class="lab">On this page</p>
+    <nav id="toc">
+      <a href="#overview" target="_self">Overview</a>
+      <a href="#quickstart" target="_self">Quick start</a>
+      <a href="#concepts" target="_self">Core concepts</a>
+      <a href="#parser" class="sub" target="_self">BID / NIT parser</a>
+      <a href="#inventory" class="sub" target="_self">Inventory &amp; readability</a>
+      <a href="#gates" class="sub" target="_self">Eligibility gates</a>
+      <a href="#matrix" class="sub" target="_self">Comparison matrix</a>
+      <a href="#scoring" class="sub" target="_self">Scoring model</a>
+      <a href="#xai" class="sub" target="_self">Explainable ranking</a>
+      <a href="#architecture" target="_self">Architecture</a>
+      <a href="#upload" target="_self">Uploading documents</a>
+      <a href="#running" target="_self">Running the app</a>
+      <a href="#reference" target="_self">Status reference</a>
+      <a href="#faq" target="_self">FAQ</a>
+    </nav>
+  </div>
+
+  <div class="content">
+
+    <h2 id="overview"><span class="num">01</span>Overview</h2>
+    <p>Argus Bid AI is an evaluation platform for public-sector procurement. You give it the Master BID
+    (the Notice Inviting Tender, or NIT) and the document sets submitted by each vendor; it returns a
+    ranked, fully-justified compliance assessment you can defend in an audit.</p>
+    <p>The work splits into five stages: parse the tender, inventory each vendor's files, run the
+    eligibility gates, score whoever survives, and explain the order. Every verdict carries the bid
+    clause it rests on and the evidence text behind it, so nothing is a black box.</p>
+    <div class="card note"><h4>What it is not</h4>
+    <p>Argus Bid AI does not replace the evaluation committee or make the award. It does the mechanical,
+    error-prone reading and cross-checking at speed, and hands a transparent recommendation to the
+    people who make the decision.</p></div>
+
+    <h2 id="quickstart"><span class="num">02</span>Quick start</h2>
+    <p>The fastest way to see the platform work end to end:</p>
+    <ol class="steps">
+      <li>Open the app and press <b>Load Demo Corpus</b>. This loads a complete sample NIT (<code>IOCL/HR/IT/2026/NW-4471</code>) and three vendor submissions.</li>
+      <li>Click <b>Run Audit Engine</b>. The terminal UI will stream the extraction and evaluation steps in real-time.</li>
+      <li>Once complete, read the resulting matrices and the explainable AI (XAI) breakdown for each vendor.</li>
+    </ol>
+    <div class="card tip"><h4>Tip</h4>
+    <p>The demo corpus always produces the same result — TechMahindra 100% (Rank&nbsp;1),
+    L&amp;T Infotech 85% (Rank&nbsp;2), Alpha Systems disqualified — which makes it a stable thing to
+    demonstrate to a reviewer before you load live documents.</p></div>
+
+    <h2 id="concepts"><span class="num">03</span>Core concepts</h2>
+
+    <h3 id="parser"><span class="num" style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-right:8px;">03.1</span>The BID / NIT parser</h3>
+    <p>The parser reads the tender text line by line and extracts four things the rest of the pipeline
+    depends on:</p>
+    <ul>
+      <li><b>The Tender ID</b> — the exact reference a vendor's Manufacturer's Authorization Form must cite.</li>
+      <li><b>Pre-Qualification Criteria (PQC)</b> — eligibility thresholds such as minimum years of
+        experience, minimum average annual turnover, and registration requirements.</li>
+      <li><b>Mandatory documents</b> — the papers every vendor must submit (e.g. MAF, PAN, GST, GeM
+        registration, audited balance sheet).</li>
+      <li><b>Technical specifications</b> — split into <i>mandatory</i> specs (carry the 70% weight) and
+        <i>preferred</i> specs (carry the remaining 30%).</li>
+    </ul>
+
+    <h3 id="inventory"><span class="num" style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-right:8px;">03.2</span>Inventory &amp; readability</h3>
+    <p>Vendors rarely name files helpfully. Argus Bid AI classifies each file by its <i>content</i>, not its
+    name, so <code class="inl">Scan_001.pdf</code> is identified as a technical bid, a PAN card, or a GST
+    certificate based on what it actually contains. Each file is then graded for legibility:</p>
+    <table class="ref">
+      <thead><tr><th>Grade</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge-glow bg-ok" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Passed OCR</span></td><td>Text extracted cleanly; the document is fully machine-readable.</td></tr>
+        <tr><td><span class="badge-glow bg-warn" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Low-Quality</span></td><td>Text extracted, but with a high ratio of garbled characters — a scan worth a human glance.</td></tr>
+        <tr><td><span class="badge-glow bg-bad" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Corrupted</span></td><td>Little to no usable text recovered; the document needs to be re-submitted or re-scanned.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="gates"><span class="num" style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-right:8px;">03.3</span>Eligibility gates</h3>
+    <p>Before any score is calculated, each vendor passes through three gates. Failing any one of them
+    disqualifies the vendor outright and the reason is written to an auditable log:</p>
+    <ul>
+      <li><b>MAF gate</b> — a Manufacturer's Authorization Form must be present, on OEM letterhead, and
+        must cite the correct Tender ID. A missing form is <span class="badge-glow bg-bad" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Missing</span>; a form
+        that fails validation is <span class="badge-glow bg-bad" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Invalid</span>.</li>
+      <li><b>PQC gate</b> — the vendor must meet every pre-qualification threshold (experience, turnover,
+        registration).</li>
+      <li><b>Mandatory-document gate</b> — every required document must be present in the submission.</li>
+    </ul>
+    <div class="card warn"><h4>Disqualification vs deduction</h4>
+    <p>Eligibility failures disqualify. A <i>technical</i> shortfall — a mandatory spec the vendor misses,
+    or a value the vendor never stated — is not an automatic disqualification; it deducts points within
+    the 70% bucket. This mirrors the brief's principle that every missed parameter costs points, while
+    only missing documents and failed pre-qualification remove a bidder entirely.</p></div>
+
+    <h3 id="matrix"><span class="num" style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-right:8px;">03.4</span>Technical comparison matrix</h3>
+    <p>For every parameter in the tender, the matrix shows the BID requirement beside the vendor's stated
+    value and a verdict chip:</p>
+    <ul>
+      <li><span class="chip match">meets / exceeds</span> — the vendor satisfies the requirement.</li>
+      <li><span class="chip fail">below requirement</span> — the vendor stated a value that falls short.</li>
+      <li><span class="chip lack">[DATA LACKING]</span> — the vendor never stated the value, so it cannot
+        be credited. This is treated as a miss, not assumed in the vendor's favour.</li>
+    </ul>
+
+    <h3 id="scoring"><span class="num" style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-right:8px;">03.5</span>Scoring model</h3>
+    <p>Only vendors that clear all three gates are scored. The score is a transparent weighted sum:</p>
+    <pre><span class="c"># 70 points for mandatory specs, 30 for preferred</span>
+mandatory_part = 70 × (mandatory specs met ÷ total mandatory specs)
+preferred_part = 30 × (preferred specs met ÷ total preferred specs)
+score          = mandatory_part + preferred_part   <span class="c"># disqualified ⇒ 0</span></pre>
+    <p>Worked example from the demo corpus: a vendor meeting all six mandatory specs earns the full 70;
+    meeting two of four preferred features earns 15 of 30; total <b>85%</b>. A vendor meeting everything
+    scores <b>100%</b>. The weighting is fixed and identical for every vendor, so the ranking is reproducible.</p>
+
+    <h3 id="xai"><span class="num" style="font-family:var(--mono);font-size:13px;color:var(--muted);margin-right:8px;">03.6</span>Explainable ranking (XAI)</h3>
+    <p>Argus Bid AI does not just print numbers — it explains the order in plain language. For adjacent
+    ranks it names the specific parameters that separated them, for example which preferred feature the
+    higher-ranked vendor satisfied that the runner-up did not. This is the "why did this vendor win"
+    paragraph an evaluation committee needs on record.</p>
+
+    <hr class="div">
+
+    <h2 id="architecture"><span class="num">04</span>Architecture: rules decide, AI assists</h2>
+    <p>This is the design choice that makes Argus Bid AI defensible, and it is worth understanding clearly.</p>
+    <div class="card note"><h4>The deterministic engine — always on</h4>
+    <p>Every compliance verdict is produced by a rule-based engine. The same inputs always yield the same
+    verdict, and each verdict carries the bid section and evidence behind it. That reproducibility is what
+    survives an audit or a vendor challenge.</p></div>
+    <div class="card tip"><h4>The AI layer — optional</h4>
+    <p>An optional language-model layer does two things only: it re-classifies documents the rules could
+    not confidently type, and it writes the executive narrative summary. It never overrides a verdict. If
+    no key is supplied, or the call fails, the audit runs identically on rules alone — so a live demo
+    cannot break.</p></div>
+    <p>In short: turning the AI off changes the prose, never the decision.</p>
+
+    <h2 id="upload"><span class="num">05</span>Uploading documents</h2>
+    <p>Supported formats are <code class="inl">.pdf</code>, <code class="inl">.txt</code>, and
+    <code class="inl">.md</code>. For each vendor, give a name and attach all of their files together.
+    For the cleanest extraction:</p>
+    <ul>
+      <li>Prefer text-based PDFs over photographs of paper where possible.</li>
+      <li>Keep each vendor's documents under one vendor entry so the inventory and gates evaluate the full set.</li>
+      <li>If a file comes back graded <span class="badge-glow bg-warn" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Low-Quality</span>, the text was still read
+        but a human should verify it — the grade is a flag, not a rejection.</li>
+    </ul>
+
+    <h2 id="running"><span class="num">06</span>Running the app</h2>
+    <p>The platform ships in two forms that share the same engine and the same verdicts.</p>
+    <h3>Streamlit application</h3>
+    <pre><span class="k">pip install</span> streamlit pdfplumber pypdf anthropic
+<span class="k">streamlit run</span> tender_audit_platform.py</pre>
+    <p>Then use the sidebar to load the demo or upload your own documents. The optional Claude API key
+    goes in the <b>LLM Augmentation</b> panel; leave it empty to run rule-only.</p>
+    <h3>Showcase website</h3>
+    <p>The static Argus Bid AI showcase runs the full demo audit in the browser
+    with no install — open it directly. It is the page to show people; the Streamlit app is the one that
+    processes live uploads.</p>
+
+    <h2 id="reference"><span class="num">07</span>Status reference</h2>
+    <table class="ref">
+      <thead><tr><th>Token</th><th>Where it appears</th><th>Meaning</th></tr></thead>
+      <tbody>
+        <tr><td><span class="badge-glow bg-ok" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Responsive</span></td><td>Leaderboard</td><td>Cleared all gates; eligible and scored.</td></tr>
+        <tr><td><span class="badge-glow bg-bad" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Disqualified</span></td><td>Leaderboard</td><td>Failed a gate; removed from ranking, reason logged.</td></tr>
+        <tr><td><span class="badge-glow bg-ok" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg> Found (Valid)</span></td><td>MAF gate</td><td>Authorization present, on letterhead, correct Tender ID.</td></tr>
+        <tr><td><span class="badge-glow bg-bad" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Invalid</span></td><td>MAF gate</td><td>Authorization present but fails validation (wrong tender, no letterhead).</td></tr>
+        <tr><td><span class="badge-glow bg-bad" style="font-size:11.5px; padding:3px 9px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Missing</span></td><td>MAF gate</td><td>No authorization form found in the submission.</td></tr>
+        <tr><td><span class="chip match">match</span></td><td>Matrix / PQC</td><td>Requirement met or exceeded.</td></tr>
+        <tr><td><span class="chip fail">fail</span></td><td>Matrix / PQC</td><td>Stated value falls short of requirement.</td></tr>
+        <tr><td><span class="chip lack">[DATA LACKING]</span></td><td>Matrix</td><td>Value never stated; counted as a miss.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="faq"><span class="num">08</span>FAQ</h2>
+    <h3>Does the AI make the final decision?</h3>
+    <p>No. The rule engine makes every verdict. The AI only re-types ambiguous documents and writes the
+    summary narrative, and can be switched off entirely without changing any result.</p>
+    <h3>Why was a vendor with strong specs still disqualified?</h3>
+    <p>Eligibility comes before merit. A missing mandatory document, a failed pre-qualification, or a
+    missing/invalid MAF disqualifies regardless of how good the technical bid is. The disqualification log
+    names the exact reason.</p>
+    <h3>What does a 100% score mean?</h3>
+    <p>The vendor met every mandatory spec (full 70) and every preferred feature (full 30). It is a
+    relative compliance score against this tender, not an absolute quality rating.</p>
+    <h3>Can I change the 70/30 weighting?</h3>
+    <p>Yes — the split is defined in the scoring function in the engine. Keep it identical across all
+    vendors in a given tender so the ranking stays reproducible and defensible.</p>
+
+  </main>
+</div></div>
+
+<footer><div class="wrap row">
+  <div>Argus Bid AI — AI-Driven Tender Auditing &amp; Compliance.</div>
+  <div><a href="case-studies.html">Case studies &rarr;</a></div>
+</div></footer>
+
+<script>
+// active TOC highlight on scroll
+const links=[...document.querySelectorAll('#toc a')];
+const map=links.map(a=>({a,t:document.querySelector(a.getAttribute('href'))})).filter(x=>x.t);
+const obs=new IntersectionObserver(es=>{
+  es.forEach(e=>{ if(e.isIntersecting){ links.forEach(l=>l.classList.remove('on'));
+    const m=map.find(x=>x.t===e.target); if(m) m.a.classList.add('on'); }});
+},{rootMargin:'-70px 0px -75% 0px',threshold:0});
+map.forEach(x=>obs.observe(x.t));
+</script>
+</body>
+</html>

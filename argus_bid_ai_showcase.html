@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Argus Bid AI — Tender Audit & Compliance Showcase</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0B1220; --panel:#111A2B; --panel2:#16213A; --line:#243049;
+  --muted:#8A99B5; --text:#E8EEF8; --blue:#3B82F6; --blue-dk:#1D4ED8;
+  --green:#10B981; --amber:#F59E0B; --red:#EF4444;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  margin:0; font-family:var(--sans); color:var(--text);
+  background:
+    radial-gradient(1200px 560px at 82% -8%, rgba(59,130,246,.12), transparent 60%),
+    radial-gradient(900px 500px at 0% 18%, rgba(16,185,129,.05), transparent 55%),
+    var(--ink);
+  -webkit-font-smoothing:antialiased; line-height:1.5;
+}
+a{color:inherit;}
+.wrap{max-width:1240px; margin:0 auto; padding:0 24px;}
+
+/* ---------- top bar ---------- */
+.topbar{position:sticky; top:0; z-index:50; backdrop-filter:blur(10px);
+  background:rgba(11,18,32,.72); border-bottom:1px solid var(--line);}
+.topbar .row{display:flex; align-items:center; justify-content:space-between; height:62px;}
+.brand{display:flex; align-items:center; gap:12px; font-weight:800; letter-spacing:-.3px;}
+.brand .glyph{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;font-weight:900;
+  box-shadow:0 6px 18px rgba(59,130,246,.4);}
+.brand small{display:block;color:var(--muted);font-weight:500;font-size:11px;letter-spacing:.2px;}
+.topnav{display:flex; gap:8px;}
+.topnav a{font-size:13px; color:var(--muted); text-decoration:none; padding:7px 12px;
+  border-radius:8px; font-weight:600;}
+.topnav a:hover{color:var(--text); background:var(--panel);}
+
+/* ---------- hero ---------- */
+.hero{padding:74px 0 38px; position:relative;}
+.eyebrow-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: #38BDF8;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 12px rgba(56, 189, 248, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  margin-bottom: 24px;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.eyebrow-tag::before {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.2), transparent);
+  transform: skewX(-20deg);
+  animation: eyebrowSweep 5s infinite;
+}
+@keyframes eyebrowSweep {
+  0% { left: -100%; }
+  20% { left: 200%; }
+  100% { left: 200%; }
+}
+.eyebrow-tag:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.2), inset 0 0 16px rgba(56, 189, 248, 0.1);
+  transform: translateY(-2px);
+  color: #7DD3FC;
+}
+.eyebrow-tag .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+  position: relative;
+}
+.eyebrow-tag .dot::after {
+  content: '';
+  position: absolute;
+  top: -4px; left: -4px; right: -4px; bottom: -4px;
+  border-radius: 50%;
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  animation: dotPing 2.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes dotPing {
+  75%, 100% { transform: scale(2.2); opacity: 0; }
+}
+.hero h1{font-size:clamp(34px,5vw,58px);line-height:1.04;font-weight:900;letter-spacing:-1.6px;
+  margin:0 0 18px; max-width:17ch;}
+.hero h1 .hl{background:linear-gradient(120deg,var(--blue),var(--green));-webkit-background-clip:text;
+  background-clip:text;color:transparent;}
+.hero p.lede{font-size:18px;color:#B7C2D8;max-width:62ch;margin:0 0 30px;}
+.cta-row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+.btn{font-family:var(--sans);font-weight:600;font-size:15px;border:none;border-radius:12px;
+  padding:14px 28px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:9px;
+  transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);}
+.btn.primary{
+  background:linear-gradient(120deg, #38BDF8, #7DD3FC);color:#0F172A;
+  box-shadow:0 4px 15px rgba(56, 189, 248, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.btn.primary:hover{
+  box-shadow:0 8px 25px rgba(56, 189, 248, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.5);
+  transform:translateY(-2px);
+}
+.btn.ghost{
+  background:rgba(56, 189, 248, 0.1);color:#38BDF8;
+  border:1px solid rgba(56, 189, 248, 0.3);
+  box-shadow:0 4px 15px rgba(56, 189, 248, 0.1), inset 0 0 10px rgba(56, 189, 248, 0.05);
+}
+.btn.ghost:hover{
+  background:rgba(56, 189, 248, 0.2);
+  border-color:rgba(56, 189, 248, 0.6);
+  box-shadow:0 8px 25px rgba(56, 189, 248, 0.25), inset 0 0 15px rgba(56, 189, 248, 0.1);
+  transform:translateY(-2px);
+}
+.hero-stats{display:flex;gap:34px;margin-top:46px;flex-wrap:wrap;}
+.hero-stats .s .n{font-size:30px;font-weight:900;letter-spacing:-.6px;}
+.hero-stats .s .l{color:var(--muted);font-size:12.5px;margin-top:2px;}
+.hero-stats .s .n.g{color:var(--green);} .hero-stats .s .n.b{color:var(--blue);} .hero-stats .s .n.r{color:var(--red);}
+
+/* ---------- section scaffolding ---------- */
+section{padding:30px 0;}
+.eyebrow{display:flex;align-items:center;gap:12px;margin:8px 0 18px;}
+.eyebrow .n{font-family:var(--mono);color:var(--blue);font-size:12px;border:1px solid var(--line);
+  border-radius:6px;padding:3px 9px;background:var(--panel);}
+.eyebrow h2{font-size:16px;font-weight:700;margin:0;letter-spacing:.2px;}
+.eyebrow .rule{flex:1;height:1px;background:var(--line);}
+.eyebrow .meta{font-family:var(--mono);font-size:11.5px;color:var(--muted);}
+
+/* ---------- masthead card ---------- */
+.masthead{border:1px solid var(--line);border-radius:16px;padding:22px 26px;
+  background:linear-gradient(135deg,var(--panel) 0%,#0E1626 100%);display:flex;
+  align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+.masthead .mark{display:flex;align-items:center;gap:14px;}
+.masthead .glyph{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,var(--blue),var(--blue-dk));
+  display:grid;place-items:center;font-weight:900;font-size:21px;color:#fff;box-shadow:0 8px 24px rgba(59,130,246,.35);}
+.masthead h3{font-size:19px;font-weight:800;margin:0;letter-spacing:-.3px;}
+.masthead .sub{color:var(--muted);font-size:12.5px;margin-top:3px;}
+.tender-chip{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);
+  color:var(--blue);padding:8px 13px;border-radius:9px;white-space:nowrap;}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:18px 0 4px;}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:17px 18px;}
+.kpi .v{font-size:27px;font-weight:900;letter-spacing:-.6px;}
+.kpi .l{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.8px;margin-top:5px;}
+.kpi.green .v{color:var(--green);}.kpi.red .v{color:var(--red);}.kpi.blue .v{color:var(--blue);}.kpi.amber .v{color:var(--amber);}
+
+/* ---------- bid map ---------- */
+.bidmap{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:6px;}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;}
+.card h4{font-size:12px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin:0 0 12px;font-weight:700;}
+.card h4:not(:first-child){margin-top:18px;}
+.req{display:flex;justify-content:space-between;gap:14px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13.5px;}
+.req:last-child{border-bottom:none;}
+.req .k{color:#C7D3EA;} .req .v{font-family:var(--mono);font-size:12px;color:var(--blue);white-space:nowrap;}
+.req .sec{font-family:var(--mono);font-size:10.5px;color:var(--muted);}
+
+/* ---------- pills ---------- */
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  padding:5px 11px;border-radius:999px;white-space:nowrap;}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;}
+.pill.ok{background:rgba(16,185,129,.12);color:var(--green);} .pill.ok::before{background:var(--green);}
+.pill.warn{background:rgba(245,158,11,.12);color:var(--amber);} .pill.warn::before{background:var(--amber);}
+.pill.bad{background:rgba(239,68,68,.12);color:var(--red);} .pill.bad::before{background:var(--red);}
+.pill.info{background:rgba(59,130,246,.12);color:var(--blue);} .pill.info::before{background:var(--blue);}
+
+/* ---------- leaderboard ---------- */
+.lbwrap{overflow-x:auto;}
+.lb{width:100%;border-collapse:separate;border-spacing:0 9px;min-width:760px;}
+.lb th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.7px;
+  padding:0 16px 4px;font-weight:600;}
+.lb td{background:var(--panel);border-top:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:15px 16px;vertical-align:middle;}
+.lb tr td:first-child{border-left:1px solid var(--line);border-top-left-radius:13px;border-bottom-left-radius:13px;}
+.lb tr td:last-child{border-right:1px solid var(--line);border-top-right-radius:13px;border-bottom-right-radius:13px;}
+.lb tr.dq td{background:rgba(239,68,68,.06);}
+.lb tr.row-hl td{outline:1px solid rgba(59,130,246,.5);}
+.rank{font-size:19px;font-weight:900;}
+.vname{font-weight:700;font-size:14.5px;}
+.vmeta{color:var(--muted);font-size:12px;margin-top:2px;}
+.scorewrap{display:flex;align-items:center;gap:11px;}
+.bar{width:120px;height:8px;background:var(--panel2);border-radius:999px;overflow:hidden;}
+.bar>span{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--blue),var(--green));
+  width:0;transition:width 1.1s cubic-bezier(.2,.7,.2,1);}
+.bar.dq>span{background:var(--red);}
+.scoreval{font-weight:900;font-size:14px;min-width:48px;}
+.take{color:var(--muted);font-size:12.5px;max-width:300px;}
+
+/* ---------- xai ---------- */
+.xai{background:linear-gradient(135deg,rgba(59,130,246,.09),transparent);
+  border:1px solid rgba(59,130,246,.3);border-radius:13px;padding:18px 20px;margin:10px 0;
+  font-size:14px;line-height:1.7;}
+.xai .lab{font-family:var(--mono);font-size:11px;color:var(--blue);text-transform:uppercase;
+  letter-spacing:.8px;margin-bottom:8px;display:flex;align-items:center;gap:8px;}
+
+/* ---------- drawers ---------- */
+.drawer{background:var(--panel);border:1px solid var(--line);border-radius:14px;margin:10px 0;overflow:hidden;}
+.drawer.dq{border-color:rgba(239,68,68,.3);}
+.dhead{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer;user-select:none;}
+.dhead:hover{background:var(--panel2);}
+.dhead .ic{font-size:15px;}
+.dhead .nm{font-weight:700;font-size:15px;}
+.dhead .rk{font-family:var(--mono);font-size:12px;color:var(--muted);}
+.dhead .sc{margin-left:auto;font-weight:900;font-size:15px;}
+.dhead .chev{color:var(--muted);transition:transform .25s;font-size:13px;}
+.drawer.open .chev{transform:rotate(90deg);}
+.dbody{display:none;padding:4px 20px 22px;border-top:1px solid var(--line);}
+.drawer.open .dbody{display:block;animation:fade .3s ease;}
+@keyframes fade{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:none;}}
+.subhead{font-size:11.5px;font-weight:700;color:var(--muted);text-transform:uppercase;
+  letter-spacing:.7px;margin:20px 0 9px;}
+.evidence{font-family:var(--mono);font-size:12px;line-height:1.65;background:#0A1322;border:1px solid var(--line);
+  border-left:3px solid var(--blue);border-radius:9px;padding:12px 14px;color:#C7D3EA;white-space:pre-wrap;}
+.evidence.bad{border-left-color:var(--red);} .evidence.ok{border-left-color:var(--green);}
+table.grid{width:100%;border-collapse:collapse;font-size:13px;}
+table.grid th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px;
+  padding:7px 10px;border-bottom:1px solid var(--line);font-weight:600;}
+table.grid td{padding:10px 10px;border-bottom:1px solid var(--line);}
+table.grid tr:last-child td{border-bottom:none;}
+.chip{font-family:var(--mono);font-size:11.5px;padding:3px 9px;border-radius:7px;display:inline-block;}
+.chip.match{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.3);}
+.chip.fail{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.chip.lack{background:rgba(245,158,11,.14);color:var(--amber);border:1px solid rgba(245,158,11,.35);}
+.chip.req{background:var(--panel2);color:var(--muted);border:1px solid var(--line);}
+.viol{background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.25);border-radius:11px;
+  padding:14px 16px;margin:10px 0;}
+.viol .vt{font-weight:700;color:var(--red);font-size:13px;margin-bottom:7px;}
+.viol .vr{font-size:12.5px;margin:4px 0;} .viol .vr .k{color:var(--muted);}
+.tright{text-align:right;}
+
+/* ---------- how it works ---------- */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px;}
+.step .sn{font-family:var(--mono);font-size:12px;color:var(--blue);}
+.step h5{margin:8px 0 6px;font-size:14.5px;font-weight:700;}
+.step p{margin:0;font-size:13px;color:var(--muted);line-height:1.6;}
+.arch{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px;}
+.arch .col h5{font-size:13px;margin:0 0 8px;font-weight:700;}
+.arch .col.det{border-left:3px solid var(--green);}
+.arch .col.llm{border-left:3px solid var(--blue);}
+.arch .col p{font-size:13px;color:var(--muted);line-height:1.65;margin:0;}
+.note{font-size:12.5px;color:var(--muted);margin-top:14px;line-height:1.6;}
+code.inl{font-family:var(--mono);font-size:12px;background:var(--panel2);border:1px solid var(--line);
+  padding:2px 7px;border-radius:6px;color:#C7D3EA;}
+
+/* ---------- footer ---------- */
+footer{border-top:1px solid var(--line);margin-top:30px;padding:30px 0 50px;color:var(--muted);font-size:13px;}
+footer .row{display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+
+/* re-run toolbar */
+.runbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px;}
+.runbar .status{font-family:var(--mono);font-size:12px;color:var(--muted);}
+
+@media (max-width:860px){
+  .kpis{grid-template-columns:repeat(2,1fr);}
+  .bidmap{grid-template-columns:1fr;}
+  .flow{grid-template-columns:1fr 1fr;}
+  .arch{grid-template-columns:1fr;}
+  .topnav{display:none;}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;}
+  .bar>span{transition:none!important;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar"><div class="wrap row">
+  <div class="brand"><div class="glyph">A</div><div>ARGUS BID AI<small>Tender Audit &amp; Compliance</small></div></div>
+  <nav class="topnav">
+    <a href="#demo">Live Audit</a>
+    <a href="#leaderboard">Leaderboard</a>
+    <a href="#deepdive">Deep-Dive</a>
+    <a href="#how">How it works</a>
+  </nav>
+</div></div>
+
+<header class="hero"><div class="wrap">
+  <span class="eyebrow-tag"><span class="dot"></span> Live demo &middot; runs entirely in your browser</span>
+  <h1>The tender file lands. <span class="hl">The verdict is already written.</span></h1>
+  <p class="lede">Argus Bid AI reads a PSU Notice Inviting Tender line by line, inventories every vendor's
+  messy submission, runs the eligibility gates &mdash; MAF, pre-qualification, mandatory documents &mdash;
+  then ranks the survivors on a transparent 70/30 weighting and explains, in plain language, exactly why
+  rank&nbsp;1 beat rank&nbsp;2. Every verdict carries its evidence.</p>
+  <div class="cta-row">
+    <a href="#demo" class="btn primary">View the live audit &rarr;</a>
+    <a href="#how" class="btn ghost">How the engine decides</a>
+  </div>
+  <div class="hero-stats" id="heroStats"></div>
+</div></header>
+
+<main class="wrap">
+
+  <section id="demo">
+    <div class="masthead">
+      <div class="mark"><div class="glyph">S</div>
+        <div><h3>Argus Bid AI &mdash; Tender Audit &amp; Compliance</h3>
+        <div class="sub">AI-assisted PSU procurement evaluation &middot; MAF gate &middot; PQC gate &middot; explainable weighted ranking</div></div>
+      </div>
+      <span class="tender-chip" id="tenderChip">TENDER &middot; &mdash;</span>
+    </div>
+
+    <div class="eyebrow" style="margin-top:26px;">
+      <span class="n">01</span><h2>Control Center</h2><span class="rule"></span>
+      <span class="meta" id="runMeta">demo corpus &middot; 3 vendors</span>
+    </div>
+    <div class="runbar">
+      <button class="btn primary" id="runBtn" style="padding:10px 16px;">&#9654;&nbsp; Re-run full audit</button>
+      <span class="status" id="runStatus">Audit complete.</span>
+    </div>
+    <div class="kpis" id="kpis"></div>
+
+    <div style="margin-top:24px;"></div>
+    <div class="eyebrow"><span class="n">&#9776;</span><h2>Parsed BID Requirement Map</h2><span class="rule"></span>
+      <span class="meta">extracted line-by-line</span></div>
+    <div class="bidmap" id="bidmap"></div>
+  </section>
+
+  <section id="leaderboard">
+    <div class="eyebrow"><span class="n">02</span><h2>Compliance Leaderboard</h2><span class="rule"></span></div>
+    <div class="lbwrap"><table class="lb" id="lb">
+      <thead><tr><th>Rank</th><th>Vendor</th><th>Status</th><th>MAF</th><th>Compliance Score</th><th>Key Takeaway</th></tr></thead>
+      <tbody id="lbBody"></tbody>
+    </table></div>
+  </section>
+
+  <section id="xaiSec">
+    <div class="eyebrow"><span class="n">03</span><h2>Explainable Ranking (XAI)</h2><span class="rule"></span></div>
+    <div id="xai"></div>
+  </section>
+
+  <section id="deepdive">
+    <div class="eyebrow"><span class="n">04</span><h2>Vendor Audit Deep-Dive</h2><span class="rule"></span>
+      <span class="meta">click a vendor to expand</span></div>
+    <div id="drawers"></div>
+  </section>
+
+  <section id="how">
+    <div class="eyebrow"><span class="n">05</span><h2>How the engine decides</h2><span class="rule"></span></div>
+    <div class="flow">
+      <div class="step"><div class="sn">step 1</div><h5>Parse the NIT</h5>
+        <p>Pull the exact tender ID, pre-qualification thresholds, mandatory documents, and every technical spec straight from the bid text.</p></div>
+      <div class="step"><div class="sn">step 2</div><h5>Inventory &amp; classify</h5>
+        <p>Identify each vendor file by content, not filename &mdash; <code class="inl">Scan_001.pdf</code> becomes a typed, readability-graded document.</p></div>
+      <div class="step"><div class="sn">step 3</div><h5>Run the gates</h5>
+        <p>A missing or invalid MAF, a failed pre-qualification, or a missing mandatory document disqualifies a vendor outright, with the reason logged.</p></div>
+      <div class="step"><div class="sn">step 4</div><h5>Score &amp; explain</h5>
+        <p>Survivors earn 70% on mandatory specs and 30% on preferred features, then a plain-language note explains the ranking.</p></div>
+    </div>
+
+    <div class="arch">
+      <div class="card col det"><h5>The rules decide &mdash; always</h5>
+        <p>Every compliance verdict is produced by a deterministic engine. The same inputs always yield the same verdict, and each one carries the bid section and the evidence text behind it. That reproducibility is what survives an audit or a vendor challenge.</p></div>
+      <div class="card col llm"><h5>The AI only assists &mdash; optionally</h5>
+        <p>An optional language-model layer re-classifies documents the rules couldn't confidently type and writes the executive narrative. It never overrides a verdict, and if it's switched off or unavailable, the audit runs identically on rules alone.</p></div>
+    </div>
+    <p class="note">This page is a self-contained showcase: the full audit logic runs in your browser on a built-in demo corpus
+      (IOCL NIT <code class="inl">IOCL/HR/IT/2026/NW-4471</code> + three vendor submissions), so the numbers you see are computed live,
+      not pre-printed. The companion Streamlit application accepts real PDF uploads and the optional model key &mdash; run it with
+      <code class="inl">streamlit run tender_audit_platform.py</code>.</p>
+  </section>
+</main>
+
+<footer><div class="wrap row">
+  <div>Argus Bid AI &mdash; AI-Driven Tender Auditing &amp; Compliance &middot; built for IOCL procurement evaluation.</div>
+  <div>Deterministic verdicts &middot; explainable ranking &middot; auditable trail.</div>
+</div></footer>
+
+<script>
+const AUDIT = {"bid":{"tender_id":"IOCL/HR/IT/2026/NW-4471","pqc":[{"key":"experience","label":"Minimum Experience","threshold":3.0,"unit":"years","section":"2.1"},{"key":"turnover","label":"Average Annual Turnover","threshold":5.0,"unit":"INR Crore","section":"2.2"},{"key":"gem","label":"GeM Registration","threshold":null,"unit":"","section":"2.3"}],"mandatory_docs":["Manufacturer's Authorization Form (MAF)","PAN Card","GST Registration","GeM Registration","Audited Balance Sheet"],"mandatory_specs":[{"label":"Switch Architecture (Layer-3)","required_value":"Managed Layer-3 switch","unit":""},{"label":"Operating Temperature","required_value":60.0,"unit":"degC"},{"label":"Switching Throughput","required_value":800.0,"unit":"Gbps"},{"label":"Warranty Period","required_value":36.0,"unit":"months"},{"label":"Port Density","required_value":48.0,"unit":"ports"},{"label":"Redundant Power Supply","required_value":"Dual hot-swappable PSU (1+1)","unit":""}],"preferred_specs":[{"label":"Hardware Stacking","required_value":"Stacking support","unit":""},{"label":"Native IPv6 Support","required_value":"Native IPv4/IPv6","unit":""},{"label":"MACsec Encryption","required_value":"Hardware MACsec","unit":""},{"label":"Extended OEM Warranty (>36m)","required_value":"Warranty beyond 36 months","unit":"months"}]},"xai":["Rank 1 TechMahindra Ltd. (100.0%) edges out Rank 2 L&T Infotech (85.0%) by 15.0 points. Decisive factors: TechMahindra Ltd. satisfied \u201cMACsec Encryption\u201d (Provided) while L&T Infotech did not ([DATA LACKING]); TechMahindra Ltd. satisfied \u201cExtended OEM Warranty (>36m)\u201d (60 months) while L&T Infotech did not (36 months). On preferred/desirable features TechMahindra Ltd. met 4 vs L&T Infotech's 2 \u2014 the 30% preferred weighting separates them."],"vendors":[{"name":"TechMahindra Ltd.","status":"Responsive","rank":1,"score":100.0,"disqualified":false,"summary":"Met 6/6 mandatory specs; 4/4 preferred features.","maf":{"status":"Found (Valid)","evidence":"Authorization confirmed on OEM letterhead and references the correct Tender No. \"IOCL/HR/IT/2026/NW-4471\". \u2026ZATION FORM (MAF) Ref: Tender No. IOCL/HR/IT/2026/NW-4471 We, Cisco Systems, the Original Equipment Manufacturer, hereby authorize M/s TechMahindra Lt\u2026","source_file":"Scan_0098.pdf"},"inventory":[{"filename":"Scan_0098.pdf","doc_type":"Manufacturer's Authorization Form (MAF)","readability":"Readable (Passed OCR)"},{"filename":"techbid_final_v3.pdf","doc_type":"Technical Datasheet / Bid","readability":"Readable (Passed OCR)"},{"filename":"price.pdf","doc_type":"Commercial / Price Bid","readability":"Readable (Passed OCR)"},{"filename":"PAN_scan.pdf","doc_type":"PAN Card","readability":"Readable (Passed OCR)"},{"filename":"gst_cert.pdf","doc_type":"GST Registration","readability":"Readable (Passed OCR)"},{"filename":"gem.pdf","doc_type":"GeM Registration","readability":"Readable (Passed OCR)"},{"filename":"balance_2024.pdf","doc_type":"Audited Balance Sheet","readability":"Readable (Passed OCR)"},{"filename":"experience.pdf","doc_type":"Experience / Past Performance Certificate","readability":"Readable (Passed OCR)"}],"pqc":[{"label":"Minimum Experience","required":"\u2265 3 years","provided":"14.0 years","passed":true,"section":"2.1"},{"label":"Average Annual Turnover","required":"\u2265 INR 5 Crore","provided":"INR 1240.0 Crore","passed":true,"section":"2.2"},{"label":"GeM Registration","required":"Required","provided":"Registered","passed":true,"section":"2.3"}],"mandatory_specs":[{"param":"Switch Architecture (Layer-3)","required":"Required","provided":"Provided","status":"match","mandatory":true,"section":""},{"param":"Operating Temperature","required":"60 degC","provided":"60 degC","status":"match","mandatory":true,"section":""},{"param":"Switching Throughput","required":"800 Gbps","provided":"1000 Gbps","status":"match","mandatory":true,"section":""},{"param":"Warranty Period","required":"36 months","provided":"60 months","status":"match","mandatory":true,"section":""},{"param":"Port Density","required":"48 ports","provided":"48 ports","status":"match","mandatory":true,"section":""},{"param":"Redundant Power Supply","required":"Required","provided":"Provided","status":"match","mandatory":true,"section":""}],"preferred_specs":[{"param":"Hardware Stacking","required":"Required","provided":"Provided","status":"match","mandatory":false,"section":""},{"param":"Native IPv6 Support","required":"Required","provided":"Provided","status":"match","mandatory":false,"section":""},{"param":"MACsec Encryption","required":"Required","provided":"Provided","status":"match","mandatory":false,"section":""},{"param":"Extended OEM Warranty (>36m)","required":">36 months","provided":"60 months","status":"match","mandatory":false,"section":""}],"deviations":[],"violations":[],"nfiles":8},{"name":"L&T Infotech","status":"Responsive","rank":2,"score":85.0,"disqualified":false,"summary":"Met 6/6 mandatory specs; 2/4 preferred features.","maf":{"status":"Found (Valid)","evidence":"Authorization confirmed on OEM letterhead and references the correct Tender No. \"IOCL/HR/IT/2026/NW-4471\". \u2026ZATION FORM Reference: Tender No. IOCL/HR/IT/2026/NW-4471 Juniper Networks authorizes M/s L&T Infotech to quote and supply the EX4400 series against t\u2026","source_file":"Document_22.pdf"},"inventory":[{"filename":"Document_22.pdf","doc_type":"Manufacturer's Authorization Form (MAF)","readability":"Readable (Passed OCR)"},{"filename":"tech_specs.pdf","doc_type":"Technical Datasheet / Bid","readability":"Readable (Passed OCR)"},{"filename":"commercial.pdf","doc_type":"Commercial / Price Bid","readability":"Readable (Passed OCR)"},{"filename":"pan.pdf","doc_type":"PAN Card","readability":"Readable (Passed OCR)"},{"filename":"gstdoc.pdf","doc_type":"GST Registration","readability":"Readable (Passed OCR)"},{"filename":"gem_profile.pdf","doc_type":"GeM Registration","readability":"Readable (Passed OCR)"},{"filename":"financials.pdf","doc_type":"Audited Balance Sheet","readability":"Readable (Passed OCR)"}],"pqc":[{"label":"Minimum Experience","required":"\u2265 3 years","provided":"9.0 years","passed":true,"section":"2.1"},{"label":"Average Annual Turnover","required":"\u2265 INR 5 Crore","provided":"INR 920.0 Crore","passed":true,"section":"2.2"},{"label":"GeM Registration","required":"Required","provided":"Registered","passed":true,"section":"2.3"}],"mandatory_specs":[{"param":"Switch Architecture (Layer-3)","required":"Required","provided":"Provided","status":"match","mandatory":true,"section":""},{"param":"Operating Temperature","required":"60 degC","provided":"60 degC","status":"match","mandatory":true,"section":""},{"param":"Switching Throughput","required":"800 Gbps","provided":"880 Gbps","status":"match","mandatory":true,"section":""},{"param":"Warranty Period","required":"36 months","provided":"36 months","status":"match","mandatory":true,"section":""},{"param":"Port Density","required":"48 ports","provided":"48 ports","status":"match","mandatory":true,"section":""},{"param":"Redundant Power Supply","required":"Required","provided":"Provided","status":"match","mandatory":true,"section":""}],"preferred_specs":[{"param":"Hardware Stacking","required":"Required","provided":"Provided","status":"match","mandatory":false,"section":""},{"param":"Native IPv6 Support","required":"Required","provided":"Provided","status":"match","mandatory":false,"section":""},{"param":"MACsec Encryption","required":"Required","provided":"[DATA LACKING]","status":"lacking","mandatory":false,"section":""},{"param":"Extended OEM Warranty (>36m)","required":">36 months","provided":"36 months","status":"fail","mandatory":false,"section":""}],"deviations":[],"violations":[],"nfiles":7},{"name":"Alpha Systems","status":"Disqualified","rank":null,"score":0.0,"disqualified":true,"summary":"Disqualified: invalid/missing MAF; failed PQC; missing PAN Card, GeM Registration, Audited Balance Sheet.","maf":{"status":"MISSING / NOT FOUND","evidence":"No file in this vendor's submission was classified as a Manufacturer's Authorization Form. No OEM authorization letterhead or signature pattern was detected.","source_file":""},"inventory":[{"filename":"Scan_001.pdf","doc_type":"Technical Datasheet / Bid","readability":"Readable (Passed OCR)"},{"filename":"Scan_002.pdf","doc_type":"GST Registration","readability":"Partially Readable (Low-Quality Warning)"},{"filename":"price_offer.pdf","doc_type":"Commercial / Price Bid","readability":"Readable (Passed OCR)"},{"filename":"company_profile.pdf","doc_type":"Experience / Past Performance Certificate","readability":"Readable (Passed OCR)"}],"pqc":[{"label":"Minimum Experience","required":"\u2265 3 years","provided":"3.0 years","passed":true,"section":"2.1"},{"label":"Average Annual Turnover","required":"\u2265 INR 5 Crore","provided":"INR 3.0 Crore","passed":false,"section":"2.2"},{"label":"GeM Registration","required":"Required","provided":"[NOT FOUND]","passed":false,"section":"2.3"}],"mandatory_specs":[{"param":"Switch Architecture (Layer-3)","required":"Required","provided":"Provided","status":"match","mandatory":true,"section":""},{"param":"Operating Temperature","required":"60 degC","provided":"45 degC","status":"fail","mandatory":true,"section":""},{"param":"Switching Throughput","required":"800 Gbps","provided":"600 Gbps","status":"fail","mandatory":true,"section":""},{"param":"Warranty Period","required":"36 months","provided":"24 months","status":"fail","mandatory":true,"section":""},{"param":"Port Density","required":"48 ports","provided":"48 ports","status":"match","mandatory":true,"section":""},{"param":"Redundant Power Supply","required":"Required","provided":"[DATA LACKING]","status":"lacking","mandatory":true,"section":""}],"preferred_specs":[{"param":"Hardware Stacking","required":"Required","provided":"[DATA LACKING]","status":"lacking","mandatory":false,"section":""},{"param":"Native IPv6 Support","required":"Required","provided":"[DATA LACKING]","status":"lacking","mandatory":false,"section":""},{"param":"MACsec Encryption","required":"Required","provided":"[DATA LACKING]","status":"lacking","mandatory":false,"section":""},{"param":"Extended OEM Warranty (>36m)","required":">36 months","provided":"24 months","status":"fail","mandatory":false,"section":""}],"deviations":["DEVIATION: We cannot supply 60 degC rated hardware; instead we will provide 45 degC rated units as an alternative."],"violations":[{"title":"Missing Mandatory Document \u2014 MAF","requirement":"Section 3.1: A valid MAF signed by the OEM referencing Tender No. \"IOCL/HR/IT/2026/NW-4471\" is an absolute prerequisite for technical qualification.","finding":"No file in this vendor's submission was classified as a Manufacturer's Authorization Form. No OEM authorization letterhead or signature pattern was detected."},{"title":"Missing Mandatory Document \u2014 PAN Card","requirement":"Section 3: Submission of PAN Card is mandatory.","finding":"No file in the vendor's submission was classified as PAN Card."},{"title":"Missing Mandatory Document \u2014 GeM Registration","requirement":"Section 3: Submission of GeM Registration is mandatory.","finding":"No file in the vendor's submission was classified as GeM Registration."},{"title":"Missing Mandatory Document \u2014 Audited Balance Sheet","requirement":"Section 3: Submission of Audited Balance Sheet is mandatory.","finding":"No file in the vendor's submission was classified as Audited Balance Sheet."},{"title":"Pre-Qualification Failure \u2014 Average Annual Turnover","requirement":"Section 2.2: Requirement is \u2265 INR 5 Crore.","finding":"Vendor provided: INR 3.0 Crore. Below the mandated threshold."},{"title":"Pre-Qualification Failure \u2014 GeM Registration","requirement":"Section 2.3: Requirement is Required.","finding":"Vendor provided: [NOT FOUND]. Below the mandated threshold."}],"nfiles":4}]};
+
+const MAF_VALID = "Found (Valid)";
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------- live scoring: recomputed in-browser from spec results ---------- */
+function computeScore(v){
+  if(v.disqualified) return 0;
+  const man = v.mandatory_specs||[], pref = v.preferred_specs||[];
+  const manMatch = man.filter(s=>s.status==="match").length;
+  const prefMatch = pref.filter(s=>s.status==="match").length;
+  const manPart = man.length ? 70*(manMatch/man.length) : 70;
+  const prefPart = pref.length ? 30*(prefMatch/pref.length) : 30;
+  return Math.round((manPart+prefPart)*10)/10;
+}
+function ranked(){
+  const vs = AUDIT.vendors.map(v=>({...v, _score:computeScore(v)}));
+  const live = vs.filter(v=>!v.disqualified).sort((a,b)=>b._score-a._score);
+  live.forEach((v,i)=>v._rank=i+1);
+  vs.filter(v=>v.disqualified).forEach(v=>v._rank=null);
+  return vs;
+}
+function ordered(){ return ranked().slice().sort((a,b)=>(a.disqualified-b.disqualified)||(b._score-a._score)); }
+
+/* ---------- pills ---------- */
+const statusPill = s => s==="Responsive"
+  ? '<span class="pill ok">Responsive</span>' : '<span class="pill bad">Disqualified</span>';
+function mafPill(s){ if(s===MAF_VALID) return '<span class="pill ok">Found (Valid)</span>';
+  if(/invalid/i.test(s)) return '<span class="pill bad">Invalid / Non-Compliant</span>';
+  return '<span class="pill bad">Missing / Not Found</span>'; }
+function readPill(s){ if(/^Readable/i.test(s)) return '<span class="pill ok">Passed OCR</span>';
+  if(/Low-Quality|Partially/i.test(s)) return '<span class="pill warn">Low-Quality</span>';
+  return '<span class="pill bad">Corrupted</span>'; }
+function specChip(s){ if(s.status==="match") return '<span class="chip match">'+esc(s.provided)+'</span>';
+  if(s.status==="fail") return '<span class="chip fail">'+esc(s.provided)+' &#10005;</span>';
+  return '<span class="chip lack">[DATA LACKING]</span>'; }
+
+/* ---------- renderers ---------- */
+function renderHeroStats(){
+  const vs = ranked();
+  const resp = vs.filter(v=>!v.disqualified);
+  const top = resp.reduce((m,v)=>Math.max(m,v._score),0);
+  document.getElementById('heroStats').innerHTML =
+    '<div class="s"><div class="n b">'+vs.length+'</div><div class="l">vendors audited</div></div>'+
+    '<div class="s"><div class="n g">'+resp.length+'</div><div class="l">responsive</div></div>'+
+    '<div class="s"><div class="n r">'+(vs.length-resp.length)+'</div><div class="l">disqualified</div></div>'+
+    '<div class="s"><div class="n">'+top+'%</div><div class="l">top score</div></div>';
+}
+function renderTender(){
+  document.getElementById('tenderChip').innerHTML = 'TENDER &middot; '+esc(AUDIT.bid.tender_id);
+}
+function renderKpis(){
+  const vs = ranked(), resp = vs.filter(v=>!v.disqualified);
+  const top = resp.reduce((m,v)=>Math.max(m,v._score),0);
+  const avg = resp.length ? Math.round(resp.reduce((a,v)=>a+v._score,0)/resp.length*10)/10 : 0;
+  document.getElementById('kpis').innerHTML =
+    kpi('blue',vs.length,'Vendors Audited')+kpi('green',resp.length,'Responsive')+
+    kpi('red',vs.length-resp.length,'Disqualified')+kpi('',top+'%','Top Score')+
+    kpi('amber',avg+'%','Avg (Responsive)');
+}
+const kpi=(c,v,l)=>'<div class="kpi '+c+'"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';
+
+function renderBidMap(){
+  const b = AUDIT.bid;
+  const pqc = b.pqc.map(p=>{
+    const thr = p.threshold!=null ? '&ge; '+p.threshold+' '+esc(p.unit) : 'Required';
+    return '<div class="req"><span class="k">'+esc(p.label)+' <span class="sec">&sect;'+esc(p.section)+'</span></span><span class="v">'+thr+'</span></div>';
+  }).join('');
+  const docs = b.mandatory_docs.map(d=>'<div class="req"><span class="k">'+esc(d)+'</span><span class="v">required</span></div>').join('');
+  const ms = b.mandatory_specs.map(s=>'<div class="req"><span class="k">'+esc(s.label)+'</span><span class="v">'+esc(s.required_value)+(s.unit?' '+esc(s.unit):'')+'</span></div>').join('');
+  const ps = b.preferred_specs.map(s=>'<div class="req"><span class="k">'+esc(s.label)+'</span><span class="v">'+esc(s.required_value)+'</span></div>').join('');
+  document.getElementById('bidmap').innerHTML =
+    '<div class="card"><h4>Pre-Qualification Criteria</h4>'+pqc+'<h4>Mandatory Documents</h4>'+docs+'</div>'+
+    '<div class="card"><h4>Mandatory Technical Specs &middot; 70%</h4>'+ms+'<h4>Preferred Specs &middot; 30%</h4>'+ps+'</div>';
+}
+
+function renderLeaderboard(animate){
+  const medals={1:"&#129351;",2:"&#129352;",3:"&#129353;"};
+  const rows = ordered().map(v=>{
+    const rankHtml = v._rank?(medals[v._rank]||('#'+v._rank)):'&mdash;';
+    const dq = v.disqualified;
+    const bar = '<div class="scorewrap"><div class="bar'+(dq?' dq':'')+'"><span data-w="'+(dq?0:v._score)+'"></span></div><span class="scoreval">'+v._score+'%</span></div>';
+    return '<tr class="'+(dq?'dq':'')+'">'+
+      '<td><span class="rank">'+rankHtml+'</span></td>'+
+      '<td><div class="vname">'+esc(v.name)+'</div><div class="vmeta">'+v.nfiles+' document(s) submitted</div></td>'+
+      '<td>'+statusPill(v.status)+'</td>'+
+      '<td>'+mafPill(v.maf.status)+'</td>'+
+      '<td>'+bar+'</td>'+
+      '<td class="take">'+esc(v.summary)+'</td></tr>';
+  }).join('');
+  document.getElementById('lbBody').innerHTML = rows;
+  // animate bars
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('#lb .bar>span').forEach(s=>{
+      const w=s.getAttribute('data-w'); if(animate){ s.style.width='0%'; requestAnimationFrame(()=>s.style.width=w+'%'); } else s.style.width=w+'%';
+    });
+  });
+}
+
+function renderXai(){
+  let html='';
+  (AUDIT.xai||[]).forEach(line=>{
+    html+='<div class="xai"><div class="lab">&#129302; Explainable ranking rationale</div>'+esc(line)+'</div>';
+  });
+  document.getElementById('xai').innerHTML = html;
+}
+
+function drawerBody(v){
+  // inventory
+  const inv = '<div class="subhead">Document Inventory &amp; Readability Audit</div>'+
+    '<table class="grid"><thead><tr><th>Document</th><th>Detected Type</th><th class="tright">Readability</th></tr></thead><tbody>'+
+    v.inventory.map(i=>'<tr><td style="font-family:var(--mono);font-size:12px;color:#C7D3EA;">'+esc(i.filename)+'</td><td>'+esc(i.doc_type)+'</td><td class="tright">'+readPill(i.readability)+'</td></tr>').join('')+
+    '</tbody></table>';
+  // maf
+  const mafCls = v.maf.status===MAF_VALID?'ok':'bad';
+  const src = v.maf.source_file?' &middot; source: '+esc(v.maf.source_file):'';
+  const maf = '<div class="subhead">Manufacturer&#39;s Authorization (MAF) Gate</div>'+
+    '<div style="margin-bottom:8px;">'+mafPill(v.maf.status)+'<span style="color:var(--muted);font-size:12px;">'+src+'</span></div>'+
+    '<div class="evidence '+mafCls+'">'+esc(v.maf.evidence)+'</div>';
+  // pqc
+  const pqc = '<div class="subhead">Pre-Qualification Criteria (PQC) Gate</div>'+
+    '<table class="grid"><thead><tr><th>Criterion</th><th>Required</th><th class="tright">Vendor Provided</th></tr></thead><tbody>'+
+    v.pqc.map(p=>{ const chip = p.passed?'<span class="chip match">'+esc(p.provided)+'</span>':'<span class="chip fail">'+esc(p.provided)+' &#10005;</span>';
+      return '<tr><td>'+esc(p.label)+' <span style="color:var(--muted);font-size:11px;">&sect;'+esc(p.section)+'</span></td><td><span class="chip req">'+esc(p.required)+'</span></td><td class="tright">'+chip+'</td></tr>';}).join('')+
+    '</tbody></table>';
+  // matrix
+  const mrows = [['Mandatory',v.mandatory_specs],['Preferred',v.preferred_specs]].flatMap(([tier,specs])=>
+    specs.map(s=>'<tr><td>'+esc(s.param)+'</td><td><span class="chip req">'+tier+'</span></td><td><span class="chip req">'+esc(s.required)+'</span></td><td class="tright">'+specChip(s)+'</td></tr>')).join('');
+  const matrix = '<div class="subhead">Technical Comparison Matrix &middot; BID required vs Vendor provided</div>'+
+    '<table class="grid"><thead><tr><th>Parameter</th><th>Tier</th><th>BID Requirement</th><th class="tright">Vendor Value</th></tr></thead><tbody>'+mrows+'</tbody></table>';
+  // deviations
+  let dev='';
+  if(v.deviations && v.deviations.length){ dev='<div class="subhead">Detected Deviations</div>'+
+    v.deviations.map(d=>'<div class="evidence bad">'+esc(d)+'</div>').join(''); }
+  // violations
+  let vio='';
+  if(v.violations && v.violations.length){ vio='<div class="subhead" style="color:var(--red);">Reason for Disqualification Log</div>'+
+    v.violations.map((x,i)=>'<div class="viol"><div class="vt">Violation '+(i+1)+': '+esc(x.title)+'</div>'+
+      '<div class="vr"><span class="k">Requirement:</span> '+esc(x.requirement)+'</div>'+
+      '<div class="vr"><span class="k">Finding:</span> '+esc(x.finding)+'</div></div>').join(''); }
+  return inv+maf+pqc+matrix+dev+vio;
+}
+
+function renderDrawers(){
+  const html = ordered().map((v,idx)=>{
+    const icon = v.disqualified?'&#128308;':'&#128994;';
+    const rank = v._rank?('Rank '+v._rank+' &middot; '):'';
+    return '<div class="drawer'+(v.disqualified?' dq':'')+'" data-i="'+idx+'">'+
+      '<div class="dhead"><span class="ic">'+icon+'</span><span class="nm">'+esc(v.name)+'</span>'+
+      '<span class="rk">'+rank+esc(v.status)+'</span><span class="sc">'+v._score+'%</span><span class="chev">&#9654;</span></div>'+
+      '<div class="dbody">'+drawerBody(v)+'</div></div>';
+  }).join('');
+  const host = document.getElementById('drawers');
+  host.innerHTML = html;
+  host.querySelectorAll('.drawer').forEach(d=>{
+    d.querySelector('.dhead').addEventListener('click',()=>d.classList.toggle('open'));
+  });
+}
+
+/* ---------- run sequence ---------- */
+function renderAll(animate){
+  renderTender(); renderHeroStats(); renderKpis(); renderBidMap();
+  renderLeaderboard(animate); renderXai(); renderDrawers();
+}
+function runAudit(){
+  const btn=document.getElementById('runBtn'), st=document.getElementById('runStatus');
+  btn.disabled=true; const stages=['Parsing Master BID…','Inventorying vendor documents…','Running MAF & PQC gates…','Scoring & ranking survivors…'];
+  let i=0; st.textContent=stages[0];
+  const reduce = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if(reduce){ renderAll(false); st.textContent='Audit complete.'; btn.disabled=false; return; }
+  const iv=setInterval(()=>{ i++; if(i<stages.length){ st.textContent=stages[i]; }
+    else{ clearInterval(iv); renderAll(true); st.textContent='Audit complete.'; btn.disabled=false; } },300);
+}
+
+document.getElementById('runBtn').addEventListener('click',runAudit);
+// initial paint
+renderAll(true);
+// open the top-ranked drawer by default for an immediate showcase
+const first=document.querySelector('#drawers .drawer'); if(first) first.classList.add('open');
+</script>
+</body>
+</html>
