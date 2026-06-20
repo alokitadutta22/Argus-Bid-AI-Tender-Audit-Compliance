@@ -2928,48 +2928,48 @@ def render_landing_page() -> None:
         display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;
     }}
     
-    @media (max-width: 900px) {
-        .landing-navbar {
+    @media (max-width: 900px) {{
+        .landing-navbar {{
             flex-direction: column;
             align-items: flex-start !important;
             padding: 12px 20px !important;
-        }
-        .landing-navbar-top {
+        }}
+        .landing-navbar-top {{
             display: flex;
             width: 100%;
             justify-content: space-between;
             align-items: center;
-        }
-        .mobile-menu-icon {
+        }}
+        .mobile-menu-icon {{
             display: block !important;
-        }
-        .nav-links {
+        }}
+        .nav-links {{
             display: none !important;
             flex-direction: column;
             width: 100%;
             gap: 12px !important;
             margin-top: 16px;
-        }
-        #mobile-menu-toggle:checked ~ .nav-links {
+        }}
+        #mobile-menu-toggle:checked ~ .nav-links {{
             display: flex !important;
-        }
-        .hero-container {
+        }}
+        .hero-container {{
             grid-template-columns: 1fr !important;
-        }
-        .hero-right {
+        }}
+        .hero-right {{
             display: none !important;
-        }
-        .cta-row {
+        }}
+        .cta-row {{
             flex-direction: column !important;
-        }
-        .cta-row a {
+        }}
+        .cta-row a {{
             width: 100% !important;
             margin-bottom: 8px;
-        }
-        .lp-grid {
+        }}
+        .lp-grid {{
             grid-template-columns: 1fr !important;
-        }
-    }
+        }}
+    }}
     </style>
     
     <input type="checkbox" id="logo-anim-toggle">
