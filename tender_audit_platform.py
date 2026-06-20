@@ -2928,7 +2928,48 @@ def render_landing_page() -> None:
         display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;
     }}
     
-    
+    @media (max-width: 900px) {
+        .landing-navbar {
+            flex-direction: column;
+            align-items: flex-start !important;
+            padding: 12px 20px !important;
+        }
+        .landing-navbar-top {
+            display: flex;
+            width: 100%;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .mobile-menu-icon {
+            display: block !important;
+        }
+        .nav-links {
+            display: none !important;
+            flex-direction: column;
+            width: 100%;
+            gap: 12px !important;
+            margin-top: 16px;
+        }
+        #mobile-menu-toggle:checked ~ .nav-links {
+            display: flex !important;
+        }
+        .hero-container {
+            grid-template-columns: 1fr !important;
+        }
+        .hero-right {
+            display: none !important;
+        }
+        .cta-row {
+            flex-direction: column !important;
+        }
+        .cta-row a {
+            width: 100% !important;
+            margin-bottom: 8px;
+        }
+        .lp-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
     </style>
     
     <input type="checkbox" id="logo-anim-toggle">
@@ -2943,13 +2984,17 @@ def render_landing_page() -> None:
     </div>
     
     <div class="landing-navbar">
-        <label class="nav-logo" for="logo-anim-toggle" style="cursor: pointer; margin: 0;">
-            <div class="small-glyph">{glyph_content}</div>
-            <div style="display: flex; flex-direction: column; justify-content: center;">
-                <span style="line-height: 1.1;">Argus Bid AI</span>
-                <div style="font-size: 10px; color: #94A3B8; font-weight: 600; margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase;">Tender Audit & Compliance</div>
-            </div>
-        </label>
+        <div class="landing-navbar-top" style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+            <label class="nav-logo" for="logo-anim-toggle" style="cursor: pointer; margin: 0;">
+                <div class="small-glyph">{glyph_content}</div>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <span style="line-height: 1.1;">Argus Bid AI</span>
+                    <div style="font-size: 10px; color: #94A3B8; font-weight: 600; margin-top: 2px; letter-spacing: 0.5px; text-transform: uppercase;">Tender Audit & Compliance</div>
+                </div>
+            </label>
+            <label for="mobile-menu-toggle" class="mobile-menu-icon" style="display: none; color: #94A3B8; font-size: 28px; cursor: pointer; user-select: none;">&#9776;</label>
+        </div>
+        <input type="checkbox" id="mobile-menu-toggle" style="display: none;">
         <div class="nav-links" style="gap: 16px; font-size: 13.5px;">
             <a href="#sec-01" target="_self">Problem</a>
             <a href="#sec-02" target="_self">Solution</a>
