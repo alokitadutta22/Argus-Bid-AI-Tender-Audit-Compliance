@@ -13,9 +13,15 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
-      - name: Install huggingface_hub
+      - name: Install dependencies
         run: pip install huggingface_hub
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: hf upload myselfdeb/Argus-Bid-AI . . --repo-type=space --token=$HF_TOKEN
+        run: |
+          python -c "
+          from huggingface_hub import HfApi
+          import os
+          api = HfApi(token=os.environ['HF_TOKEN'])
+          api.upload_folder(folder_path='.', repo_id='myselfdeb/Argus-Bid-AI', repo_type='space', ignore_patterns=['.git/*', '.github/*'])
+          "
