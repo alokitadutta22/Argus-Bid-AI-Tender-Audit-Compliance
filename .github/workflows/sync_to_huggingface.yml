@@ -13,7 +13,9 @@ jobs:
         with:
           fetch-depth: 0
           lfs: true
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
       - name: Push to hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: git push --force https://myselfdeb:$HF_TOKEN@huggingface.co/spaces/myselfdeb/Argus-Bid-AI main
+        run: huggingface-cli upload myselfdeb/Argus-Bid-AI . . --repo-type=space --token=$HF_TOKEN
