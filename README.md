@@ -24,14 +24,12 @@
 ## 🏢 Academic & Industrial Context
 
 <div align="center">
-  <img src="iocl_logo.png" alt="Indian Oil Corporation Limited Logo" width="80" style="margin-top: 10px; margin-bottom: 15px;">
+  <img src="iocl_logo.png" alt="Indian Oil Corporation Limited Logo" width="180" style="margin-top: 10px; margin-bottom: 20px;">
 </div>
 
+This platform was engineered as part of a **Software Engineering (SWE) Summer Internship** at **Indian Oil Corporation Limited (IOCL), Haldia Refinery** during my first year, second semester (June 15th, 2026 – July 13th, 2026).
+
 > [!IMPORTANT]
-> **Software Engineering (SWE) Summer Internship @ Indian Oil Corporation Limited (IOCL), Haldia Refinery**
-> 
-> *June 15th, 2026 – July 13th, 2026 (First Year, Second Semester)*
-> 
 > 👤 **Role & Authorship:** I am the **sole developer and exclusive contributor** to this project. I independently engineered the entire platform from scratch, encompassing all core architecture, frontend design, and backend logic.
 > 
 > 🏢 **Guidance & Compliance:** The architectural design, project structure, and enterprise compliance standards were developed under the expert guidance and explicit instructions of my supervisors in the **Information Systems (IS) Department** at IOCL, Haldia Refinery. Their mentorship was instrumental in ensuring the tool meets the rigorous demands of public sector procurement.
