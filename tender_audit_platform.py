@@ -45,6 +45,44 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import streamlit as st
 
+def inject_custom_loading_screen():
+    try:
+        import os
+        import streamlit
+        streamlit_dir = os.path.dirname(streamlit.__file__)
+        index_path = os.path.join(streamlit_dir, 'static', 'index.html')
+        with open(index_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+        if 'id="custom-argus-loader"' not in html:
+            loader_html = """
+            <div id="custom-argus-loader" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #0B1220; z-index: 9999999; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Inter', sans-serif; transition: opacity 0.6s ease-out;">
+                <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; margin-bottom: 24px;">
+                    <div style="position: absolute; inset: 0; border-radius: 50%; border: 3px solid rgba(56, 189, 248, 0.1); border-top-color: #38BDF8; animation: spin 1s linear infinite;"></div>
+                    <div style="position: absolute; inset: 8px; border-radius: 50%; border: 3px solid rgba(16, 185, 129, 0.1); border-bottom-color: #10B981; animation: spin 1.5s linear infinite reverse;"></div>
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#E2E8F0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                </div>
+                <h2 style="color: #F8FAFC; margin: 0 0 8px 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Argus Bid AI</h2>
+                <p style="color: #94A3B8; margin: 0; font-size: 15px;">Initializing secure tender engine...</p>
+                <style>
+                    @keyframes spin { 100% { transform: rotate(360deg); } }
+                </style>
+                <script>
+                    setTimeout(() => {
+                        const l = document.getElementById('custom-argus-loader');
+                        if(l) { l.style.opacity = '0'; setTimeout(()=>l.remove(), 600); }
+                    }, 8000);
+                </script>
+            </div>
+            """
+            html = html.replace('<body>', f'<body>\n{loader_html}')
+            with open(index_path, 'w', encoding='utf-8') as f:
+                f.write(html)
+    except Exception:
+        pass
+
+inject_custom_loading_screen()
+
+
 logging.getLogger("pdfminer").setLevel(logging.ERROR)
 
 # ---------------------------------------------------------------------------
@@ -4124,6 +4162,16 @@ def main() -> None:
     eyebrow("04", "Vendor Audit Deep-Dive")
     render_drawers(ss.results)
 
+    # Hide the custom loader if it exists
+    st.components.v1.html("""
+    <script>
+        const loader = window.parent.document.getElementById('custom-argus-loader');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.remove(), 600);
+        }
+    </script>
+    """, height=0, width=0)
 
 if __name__ == "__main__":
     main()
