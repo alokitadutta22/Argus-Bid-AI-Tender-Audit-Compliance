@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🛡️ Argus Bid AI - Sentinel Tender Audit Platform
+# <img src="logo.jpg" alt="Argus Bid AI Logo" width="40" style="vertical-align: middle; margin-right: 10px; border-radius: 8px;"> Argus Bid AI — Tender Audit & Compliance
 
 **A production-grade, deterministic AI-driven tender auditing and compliance platform for PSUs.**
 
@@ -17,7 +17,7 @@
 
 ---
 
-**Argus Bid AI (Sentinel)** is a highly auditable and visually spectacular AI-driven Tender Auditing & Compliance Platform. Built specifically for Public Sector Undertakings (PSUs) like IOCL, it automates the tedious, manual process of validating vendor submissions against complex Master BID/NIT (Notice Inviting Tender) documents. It ensures rapid, bias-free evaluations while maintaining strict legal defensibility through deterministic rule-engines.
+**Argus Bid AI** is a highly auditable and visually spectacular AI-driven Tender Auditing & Compliance Platform. Built specifically for Public Sector Undertakings (PSUs) like IOCL, it automates the tedious, manual process of validating vendor submissions against complex Master BID/NIT (Notice Inviting Tender) documents. It ensures rapid, bias-free evaluations while maintaining strict legal defensibility through deterministic rule-engines.
 
 ## 🎯 Executive Overview
 
@@ -28,7 +28,7 @@ Procurement evaluation is traditionally a manual bottleneck. Officers must manua
 Argus Bid AI transforms procurement from a manual chore into an instant, deterministic, and auditable process. By acting as a strict compliance gate, it extracts the matrix of requirements from the Master BID and cross-matches it against every vendor's submission. 
 
 ### ✨ Tech Innovations
-- **Deterministic Rule Engine:** Unlike generative AI that hallucinate, Sentinel relies on strict logic to evaluate pass/fail compliance.
+- **Deterministic Rule Engine:** Unlike generative AI that hallucinate, Argus Bid AI relies on strict logic to evaluate pass/fail compliance.
 - **Explainable Audit Trails (XAI):** Every single decision, rank, or disqualification is backed by a legally defensible, traceable text snippet.
 - **LLM Augmentation:** Anthropic's API is used carefully for complex semantic classification and executive summarization, but never for the final compliance verdict.
 - **Dynamic Multi-modal OCR:** Extracts text and tables effortlessly.
