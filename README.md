@@ -1,11 +1,3 @@
----
-title: Argus Bid AI
-emoji: 🛡️
-colorFrom: blue
-colorTo: green
-sdk: docker
-pinned: false
----
 # Sentinel — AI-Driven Tender Auditing & Compliance Platform
 
 **Sentinel** is a production-grade, highly auditable, and visually spectacular AI-driven Tender Auditing & Compliance Platform built for Public Sector Undertakings (PSUs) like IOCL. It automates the tedious process of validating vendor submissions against complex Master BID/NIT (Notice Inviting Tender) documents.
@@ -50,9 +42,8 @@ Simply double-click the `run.bat` file in the project folder. It will automatica
 
 ## Deployment
 
-The application is built entirely as a single-file Streamlit app, making it extremely easy to deploy on platforms like Streamlit Community Cloud, Heroku, or internal PSU servers.
-- **Streamlit Cloud:** Just push this repository to GitHub, go to share.streamlit.io, and deploy `tender_audit_platform.py`.
-- **Docker:** You can easily containerize this app by writing a simple Dockerfile that installs `requirements.txt` and runs the `streamlit run` command.
+The application is built entirely as a single-file Streamlit app. It includes a `render.yaml` Blueprint for instant 1-click deployment on Render.
+- **Render:** Connect your GitHub repository to Render and use the Blueprint feature to instantly launch a secure native Python Web Service.
 
 ## Showcase Website
 

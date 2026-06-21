@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .sentinel_cache.json
+.sentinel_cache.pkl
 error_log.txt
 test_js.py
 .env
