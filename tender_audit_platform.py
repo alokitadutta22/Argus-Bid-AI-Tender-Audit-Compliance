@@ -3060,7 +3060,7 @@ def render_landing_page() -> None:
         display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 40px;
     }}
     
-    @media (max-width: 900px) {{
+    @media (max-width: 1100px) {{
         .landing-navbar {{
             flex-direction: column;
             align-items: flex-start !important;
@@ -3121,7 +3121,7 @@ def render_landing_page() -> None:
         }}
         .hero-right {{
             display: flex !important;
-            margin-top: 20px;
+            margin-top: 50px;
             transform: scale(0.75);
             transform-origin: center;
         }}
