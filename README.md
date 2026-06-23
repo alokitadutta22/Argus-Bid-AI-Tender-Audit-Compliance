@@ -43,10 +43,10 @@ Argus Bid AI transforms procurement from a manual chore into an instant, determi
 
 ### ✨ Tech Innovations
 
-- **Deterministic Rule Engine:** Unlike generative AI that hallucinate, Argus Bid AI relies on strict logic to evaluate pass/fail compliance.
+- **Deterministic Rule Engine:** Unlike generative AI that can hallucinate, Argus Bid AI relies on strict logic to evaluate pass/fail compliance.
 - **Explainable Audit Trails (XAI):** Every single decision, rank, or disqualification is backed by a legally defensible, traceable text snippet.
-- **LLM Augmentation:** Anthropic's API is used carefully for complex semantic classification and executive summarization, but never for the final compliance verdict.
-- **Dynamic Multi-modal OCR:** Extracts text and tables effortlessly.
+- **100% Local Processing:** The entire platform runs completely on your local machine with zero external API calls or internet connection dependencies, ensuring absolute security.
+- **Dynamic Multi-modal OCR:** Extracts text and tables locally and effortlessly.
 
 ### 🧩 Core Product Modules
 
@@ -55,24 +55,9 @@ Argus Bid AI transforms procurement from a manual chore into an instant, determi
 - **Interactive Dashboard:** A premium, glassmorphic UI for uploading documents, running audits, and viewing explainable results.
 - **Exportable Reports:** Instantly export the entire dashboard analysis as a physical or PDF report for stakeholder review.
 
-### 🤖 The LLM Augmentation (Optional)
+### 🛡️ 100% Local & Secure Design
 
-The LLM Augmentation is a very specific architectural choice for the Argus Bid AI platform.
-
-The entire core of the Argus platform is built to be **100% deterministic and rule-based**. This means when evaluating critical compliance rules (like checking revenue numbers, dates, or missing signatures), it uses strict programmatic logic, not AI. This prevents "AI hallucinations" and ensures that if a vendor fails, the reason is legally auditable and mathematically absolute.
-
-However, if you choose to provide an API key and enable the LLM Augmentation, the platform activates an AI assistant that runs alongside the deterministic engine to do exactly two things:
-
-#### 1. Smart Fallback for Messy Documents
-
-Sometimes vendors upload documents that are incredibly poorly formatted, blurry, or strangely named, making it hard for the strict rules to figure out exactly what the document is (e.g., "Is this an MAF or just a general brochure?"). If the strict engine gets confused, it quietly passes the text to the LLM. The LLM acts as a "smart backup" to read the document contextually and classify it correctly so the deterministic engine can grade it.
-
-#### 2. Generating the Executive Summary Narrative
-
-After the platform has mathematically ranked the vendors, the raw data can be quite dense. If the LLM is enabled, the platform feeds all the final pass/fail results into the AI and asks it to write a clean, human-readable "Executive Narrative." It essentially writes your final summary report for you, explaining exactly why Vendor 1 beat Vendor 2 in plain English.
-
-> **⚠️ The Most Important Rule:**  
-> The LLM never overrides a verdict. The AI is strictly walled off from making any actual compliance decisions. If you leave the LLM turned off, or don't provide an API key, the core audit still runs perfectly and identically—you just won't get the generated executive summary paragraph at the end.
+The entire Argus platform is built to be **100% local, deterministic, and rule-based**. When evaluating critical compliance rules (like checking experience certificates, revenue numbers, dates, or missing mandatory documents), it uses strict programmatic logic. This prevents "AI hallucinations" and ensures that every evaluation result is legally auditable, mathematically absolute, and completely secure.
 
 ---
 
@@ -93,33 +78,37 @@ After the platform has mathematically ranked the vendors, the raw data can be qu
 | **Frontend & UI**       | Streamlit          | High-performance, pure-Python UI framework.                             |
 |                         | Custom CSS/JS      | Premium glassmorphic styling, animations, and dynamic DOM manipulation. |
 | **Backend Logic**       | Python 3.11        | Core logic, data processing, and document handling.                     |
-| **AI & NLP**            | Anthropic API      | Used for semantic document classification and executive summarization.  |
 | **Document Processing** | pdfplumber & pypdf | Robust text extraction from complex PDFs.                               |
 | **Deployment**          | Render             | Native Python Web Service for secure, iframe-free hosting.              |
 
 ---
 
-## 🏗️ Architecture (High Level)
+## 🏗️ Architecture & Decoupled Design
 
-Argus Bid AI follows a streamlined, single-tier architecture optimized for data processing:
+Argus Bid AI is designed with a modular, decoupled architecture to separate logic from presentation, making it scalable, maintainable, and independently testable:
 
-1. **Presentation Layer:** A dynamic Streamlit frontend enhanced with custom HTML/JS/CSS for a premium user experience.
-2. **Processing Layer:** Python backend that orchestrates file parsing, text extraction, and calls the Anthropic API for NLP tasks.
-3. **Evaluation Layer:** The deterministic rule engine that applies extracted Master BID constraints to Vendor text arrays, generating the XAI scoring matrix.
+1. **Presentation Layer (`ui_styles.py` & `tender_audit_platform.py`):**
+   - **`ui_styles.py`**: A dedicated styling module providing custom CSS injections, CSS animations, and premium glassmorphic UI components (custom HTML cards, KPI tiles, progress bars, and document status cards).
+   - **`tender_audit_platform.py`**: Streamlined Streamlit frontend that orchestrates the overall application layout, file upload handlers, session state routing, and interactive page views.
+2. **Evaluation & Processing Layer (`audit_engine.py`):**
+   - **`audit_engine.py`**: A pure, zero-UI dependency backend containing the rules dictionary, mock databases, rule extraction parser logic, and vendor audit evaluation functions. Because it is completely decoupled from Streamlit, it can run as an independent background script or be integrated into command-line tooling.
 
 ---
 
 ## 📂 Repository Structure
 
 ```
-Argus-Bid-AI/
-├── tender_audit_platform.py    # Main Streamlit application and core logic
+Argus-Bid-AI-Tender-Audit-Compliance/
+├── tender_audit_platform.py    # Main Streamlit UI layout & dashboard routing
+├── audit_engine.py             # Pure Python audit logic (Zero UI dependencies)
+├── ui_styles.py                # Premium CSS styling, animations, & HTML renderers
 ├── requirements.txt            # Python dependencies
 ├── render.yaml                 # Render Blueprint for 1-click deployment
 ├── run.bat                     # Windows startup script for local dev
 ├── .gitignore                  # Ignored files and local caches
 └── README.md                   # Project documentation
 ```
+
 
 ---
 
@@ -129,7 +118,6 @@ Argus-Bid-AI/
 
 - [Python 3.8+](https://www.python.org/)
 - [Git](https://git-scm.com/)
-- An Anthropic API Key (Optional, for LLM features)
 
 ### 1. Clone the Repository
 
@@ -156,8 +144,7 @@ The application will be accessible at `http://localhost:8501`.
 
 ## 🔒 Security Notes
 
-- **API Keys:** You can input your Anthropic API key securely through the application sidebar. It is never stored permanently on the server.
-- **Data Privacy:** All document parsing and deterministic auditing is done in-memory. Uploaded sensitive tender documents are not persisted to a public database.
+- **Data Privacy:** All document parsing and deterministic auditing is done in-memory. Uploaded sensitive tender documents are processed 100% locally and are not persisted or sent to any public server.
 
 ---
 
