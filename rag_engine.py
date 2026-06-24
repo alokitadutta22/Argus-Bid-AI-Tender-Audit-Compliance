@@ -177,6 +177,69 @@ class LocalRAGAuditEngine(AuditEngine):
             
         return "Unclassified Document"
 
+    def classify_all_documents(self, files: Dict[str, str], bid: Optional[Dict[str, Any]] = None) -> Dict[str, str]:
+        """Classifies all documents in a single LLM call to save time, falling back to individual classification if it fails."""
+        if not files:
+            return {}
+            
+        from audit_engine import DOC_TYPES
+        categories = list(DOC_TYPES)
+        if bid and bid.get("mandatory_docs"):
+            for d in bid["mandatory_docs"]:
+                if d not in categories:
+                    categories.append(d)
+                    
+        system_prompt = (
+            "You are a professional document classifier for PSU procurement audits.\n"
+            "Your task is to classify each of the uploaded documents into exactly ONE of the following categories:\n"
+            + "\n".join(f"- {t}" for t in categories) + "\n\n"
+            "Return a JSON object where keys are the exact filenames and values are the exact category names.\n"
+            "Do not include any other keys, comments, markdown tags, or explanation. Response must be valid, parseable JSON."
+        )
+        
+        user_content = ""
+        for fname, text in files.items():
+            preview = (text or "").strip()[:1000]
+            user_content += f"--- FILENAME: {fname} ---\n{preview}\n\n"
+            
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("user", user_content)
+        ])
+        
+        chain = prompt | self.llm | self.json_parser
+        
+        classified = {}
+        try:
+            res = chain.invoke({})
+            if isinstance(res, dict):
+                for fname in files.keys():
+                    val = res.get(fname)
+                    if val:
+                        val_str = str(val).strip()
+                        # Match category fuzzy
+                        matched = None
+                        for t in categories:
+                            if val_str.lower() == t.lower():
+                                matched = t
+                                break
+                        if not matched:
+                            for t in categories:
+                                if t.lower() in val_str.lower() or val_str.lower() in t.lower():
+                                    matched = t
+                                    break
+                        if matched:
+                            classified[fname] = matched
+        except Exception as e:
+            logger.error(f"Batch classification failed: {e}. Falling back to individual classification.")
+            
+        # Fill in missing files using individual classifier
+        for fname, text in files.items():
+            if fname not in classified:
+                classified[fname] = self.classify_document(fname, text, bid)
+                
+        return classified
+
     def parse_master_bid(self, text: str) -> Dict[str, Any]:
         """Dynamically parses the Master Tender document (NIT) using local Llama 3."""
         self.bid_text = text
@@ -576,6 +639,105 @@ class LocalRAGAuditEngine(AuditEngine):
                 bid_page=bid_page
             )
 
+    def extract_all_specs_rag(self, vector_store: Chroma, specs: List[Dict[str, Any]], mandatory: bool) -> List[SpecResult]:
+        """Extracts and audits a list of technical parameters in a single LLM call to save time."""
+        if not specs:
+            return []
+            
+        labels = [s["label"] for s in specs]
+        query = "Technical datasheet specifications: " + ", ".join(labels[:5])
+        
+        docs = self._similarity_search_filtered(vector_store, query, k=5, doc_type="Technical Datasheet / Bid")
+        context = self._build_context_from_docs(docs)
+        
+        prompt = ChatPromptTemplate.from_template("""
+        You are a technical compliance auditor. Your job is to verify if the vendor's technical datasheet complies with the required technical specifications.
+        
+        Here are the parameters to check:
+        {parameters}
+        
+        Review the technical datasheet context below:
+        ---
+        {context}
+        ---
+        
+        For each parameter in the input list, extract:
+        1. What value the vendor provided for this parameter.
+        2. The compliance status:
+           - "match": if the vendor's value meets or exceeds the requirement.
+           - "fail": if the vendor's value fails to meet the requirement.
+           - "lacking": if the context doesn't mention this parameter.
+        
+        Return a JSON object containing a single key 'specs' which maps to a list. Each item in the list must represent one parameter and have the following keys:
+        - "label": (exact parameter name from the input list)
+        - "provided": (string description of the vendor's value)
+        - "status": ("match", "fail", or "lacking")
+        - "source_file": (string filename where you found this information)
+        - "page": (integer page number where you found this information)
+        
+        Important: Output ONLY the raw JSON block. No explanation.
+        """)
+        
+        # Format parameters for the prompt
+        params_str = ""
+        for s in specs:
+            req_val = s.get("required_value", s.get("bid_value", True))
+            params_str += f"- Parameter: \"{s['label']}\", Operator: \"{s['op']}\", Required: {req_val} {s.get('unit', '')}\n"
+            
+        try:
+            chain = prompt | self.llm | self.json_parser
+            res = chain.invoke({
+                "parameters": params_str,
+                "context": context
+            })
+            
+            # Map LLM results back to SpecResult objects
+            spec_map = {}
+            for item in res.get("specs", []):
+                if isinstance(item, dict) and "label" in item:
+                    spec_map[str(item["label"]).lower().strip()] = item
+                    
+            results = []
+            for s in specs:
+                label = s["label"]
+                op = s["op"]
+                required = s.get("required_value", s.get("bid_value", True))
+                unit = s.get("unit", "")
+                
+                # Setup target bid positions
+                bid_file, bid_page = "", 1
+                bid_pos = self._find_bid_pos(s)
+                if bid_pos is not None:
+                    bid_file, bid_page = self._find_file_and_page_for_bid_match(bid_pos)
+                
+                llm_item = spec_map.get(label.lower().strip())
+                if llm_item:
+                    provided_val = llm_item.get("provided", "[DATA LACKING]")
+                    status = llm_item.get("status", "lacking")
+                    page_info = f" (Pg {llm_item.get('page', 1)})" if status != "lacking" else ""
+                    
+                    results.append(SpecResult(
+                        param=label,
+                        required=self._fmt(required, unit) if op != "bool" else "Required",
+                        provided=provided_val + page_info,
+                        status=status,
+                        mandatory=mandatory,
+                        file=llm_item.get("source_file", ""),
+                        page=llm_item.get("page", 1),
+                        bid_file=bid_file,
+                        bid_page=bid_page
+                    ))
+                else:
+                    # Fallback to individual check if missing from batch response
+                    results.append(self.extract_spec_rag(vector_store, s, mandatory))
+            return results
+        except Exception as e:
+            logger.error(f"Batch spec extraction failed: {e}. Falling back to individual extraction.")
+            results = []
+            for s in specs:
+                results.append(self.extract_spec_rag(vector_store, s, mandatory))
+            return results
+
     def detect_deviations_rag(self, vector_store: Chroma) -> List[str]:
         """Identifies vendor deviations semantically using local RAG."""
         query = "deviation statement cannot supply instead we will provide not supported alternative exception"
@@ -620,10 +782,9 @@ class LocalRAGAuditEngine(AuditEngine):
         result = VendorResult(name=name)
 
         # 1. Inventory & classification
-        file_types = {}
+        file_types = self.classify_all_documents(files, bid)
         for fname, text in files.items():
-            doc_type = self.classify_document(fname, text, bid)
-            file_types[fname] = doc_type
+            doc_type = file_types.get(fname, "Unclassified Document")
             readability = self.assess_readability(text, errors.get(fname))
             result.inventory.append(InventoryItem(fname, doc_type, readability))
 
@@ -637,20 +798,22 @@ class LocalRAGAuditEngine(AuditEngine):
             return super().analyze_vendor(name, files, errors, bid)
 
         try:
-            # 3. MAF compliance gate via RAG
-            result.maf = self.validate_maf_rag(vector_store, bid.get("tender_id", ""))
-
-            # 4. PQC evaluation via RAG
-            result.pqc = self.evaluate_pqc_rag(vector_store, bid.get("pqc", []))
-
-            # 5. Technical specs verification via RAG
-            for spec in bid.get("mandatory_specs", []):
-                result.mandatory_specs.append(self.extract_spec_rag(vector_store, spec, True))
-            for spec in bid.get("preferred_specs", []):
-                result.preferred_specs.append(self.extract_spec_rag(vector_store, spec, False))
-
-            # 6. Deviation checks via RAG
-            result.deviations = self.detect_deviations_rag(vector_store)
+            from concurrent.futures import ThreadPoolExecutor
+            
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                # Submit tasks concurrently to utilize local CPU cycles efficiently
+                maf_future = executor.submit(self.validate_maf_rag, vector_store, bid.get("tender_id", ""))
+                pqc_future = executor.submit(self.evaluate_pqc_rag, vector_store, bid.get("pqc", []))
+                m_specs_future = executor.submit(self.extract_all_specs_rag, vector_store, bid.get("mandatory_specs", []), True)
+                p_specs_future = executor.submit(self.extract_all_specs_rag, vector_store, bid.get("preferred_specs", []), False)
+                dev_future = executor.submit(self.detect_deviations_rag, vector_store)
+                
+                # Gather results as they complete
+                result.maf = maf_future.result()
+                result.pqc = pqc_future.result()
+                result.mandatory_specs = m_specs_future.result()
+                result.preferred_specs = p_specs_future.result()
+                result.deviations = dev_future.result()
 
             # 7. Missing mandatory documents check
             for doc in bid.get("mandatory_docs", []):
