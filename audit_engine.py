@@ -323,9 +323,12 @@ def format_table_as_markdown(table: List[List[Optional[str]]]) -> str:
 def perform_ocr_on_page(page) -> str:
     """Attempts to run OCR on a pdfplumber page using pytesseract or easyocr."""
     if not (HAS_PYTESSERACT or HAS_EASYOCR):
+        print("OCR skipped: pytesseract and easyocr not available.")
         return ""
         
     try:
+        page_num = page.page_number
+        print(f"[OCR] Scanning Page {page_num}...")
         # Convert page to PIL image
         im = page.to_image(resolution=150)
         pil_img = im.original
@@ -334,10 +337,13 @@ def perform_ocr_on_page(page) -> str:
         if HAS_PYTESSERACT:
             try:
                 import pytesseract
+                print(f"[OCR] Trying pytesseract on Page {page_num}...")
                 text = pytesseract.image_to_string(pil_img)
                 if text and len(text.strip()) > 10:
+                    print(f"[OCR] pytesseract succeeded on Page {page_num}.")
                     return text.strip()
             except Exception as e:
+                print(f"[OCR] pytesseract failed on Page {page_num}: {e}")
                 logging.warning(f"pytesseract OCR failed: {e}")
                 
         # 2. Try easyocr next
@@ -345,6 +351,7 @@ def perform_ocr_on_page(page) -> str:
             try:
                 import easyocr
                 import numpy as np
+                print(f"[OCR] Trying easyocr on Page {page_num} (weights will download on first run)...")
                 global _EASYOCR_READER
                 if '_EASYOCR_READER' not in globals():
                     _EASYOCR_READER = easyocr.Reader(['en'], gpu=False)
@@ -354,17 +361,20 @@ def perform_ocr_on_page(page) -> str:
                 if results:
                     text = "\n".join([res[1] for res in results])
                     if text and len(text.strip()) > 10:
+                        print(f"[OCR] easyocr succeeded on Page {page_num}.")
                         return text.strip()
             except Exception as e:
+                print(f"[OCR] easyocr failed on Page {page_num}: {e}")
                 logging.warning(f"easyocr OCR failed: {e}")
                 
     except Exception as e:
+        print(f"[OCR] Failed to render Page {page.page_number} for OCR: {e}")
         logging.error(f"Failed to render page for OCR: {e}")
         
     return ""
 
 
-def extract_text_from_pdf_bytes(data: bytes) -> Tuple[str, Optional[str]]:
+def extract_text_from_pdf_bytes(data: bytes, enable_ocr: bool = False) -> Tuple[str, Optional[str]]:
     """Extract text from raw PDF bytes using pdfplumber (primary) or pypdf (fallback)."""
     text = ""
     last_error: Optional[str] = None
@@ -377,7 +387,7 @@ def extract_text_from_pdf_bytes(data: bytes) -> Tuple[str, Optional[str]]:
                     ptext = page.extract_text() or ""
                     
                     # If page has no text, try OCR fallback
-                    if len(ptext.strip()) < 10:
+                    if enable_ocr and len(ptext.strip()) < 10:
                         ocr_text = perform_ocr_on_page(page)
                         if ocr_text:
                             ptext = ocr_text + "\n[OCR Fallback Content]"
@@ -435,7 +445,7 @@ def is_valid_bid_document(text: str) -> bool:
     return False
 
 
-def read_uploaded_file(uploaded) -> Tuple[str, Optional[str]]:
+def read_uploaded_file(uploaded, enable_ocr: bool = False) -> Tuple[str, Optional[str]]:
     """Read a Streamlit UploadedFile into text, dispatching by extension."""
     name = (getattr(uploaded, "name", "") or "").lower()
     try:
@@ -444,7 +454,7 @@ def read_uploaded_file(uploaded) -> Tuple[str, Optional[str]]:
         return "", f"Could not read bytes: {exc}"
 
     if name.endswith(".pdf"):
-        return extract_text_from_pdf_bytes(data)
+        return extract_text_from_pdf_bytes(data, enable_ocr=enable_ocr)
     if name.endswith((".txt", ".csv", ".md")):
         try:
             return data.decode("utf-8", errors="replace"), None

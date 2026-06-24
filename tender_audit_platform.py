@@ -504,7 +504,7 @@ margin-bottom: 24px; position: relative; overflow: hidden; display: flex; flex-d
                         added = False
                         for f in bid_up:
                             if f.name not in ss.bid_files:
-                                text, err = read_uploaded_file(f)
+                                text, err = read_uploaded_file(f, enable_ocr=ss.get("enable_ocr", False))
                                 if text:
                                     if not is_valid_bid_document(text):
                                         st.error(f"'{f.name}' is not a valid BID document. Please enter a valid BID document.")
@@ -632,7 +632,7 @@ margin-bottom: 24px; position: relative; overflow: hidden; display: flex; flex-d
             with vendor_spinner_placeholder:
                 with custom_spinner(f"Extracting and classifying {len(vfiles)} documents for {vname}...", theme="purple"):
                     for f in vfiles:
-                        t, e = read_uploaded_file(f)
+                        t, e = read_uploaded_file(f, enable_ocr=ss.get("enable_ocr", False))
                         texts[f.name] = t
                         errs[f.name] = e
             ss.vendor_files[vname] = texts
@@ -692,6 +692,12 @@ margin-bottom: 24px; position: relative; overflow: hidden; display: flex; flex-d
             ["Deterministic Rules (Regex)", "Local Llama RAG (Ollama)"],
             key="engine_mode",
             help="Choose between strict deterministic regex rules or local semantic LLM-based RAG evaluation."
+        )
+        enable_ocr = st.checkbox(
+            "Enable OCR Fallback (Scanned PDFs)",
+            value=False,
+            key="enable_ocr",
+            help="Uses pytesseract/easyocr to scan unreadable pages. Extremely slow on CPU."
         )
         if engine_mode == "Local Llama RAG (Ollama)":
             st.text_input(
