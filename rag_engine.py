@@ -91,15 +91,16 @@ class LocalRAGAuditEngine(AuditEngine):
     Performs semantic vector searches and structured compliance checks.
     """
 
-    def __init__(self, model_name: str = "llama3", embedding_model: str = "nomic-embed-text"):
+    def __init__(self, model_name: str = "llama3", embedding_model: str = "nomic-embed-text", base_url: str = "http://localhost:11434"):
         super().__init__()
         self.model_name = model_name
         self.embedding_model = embedding_model
+        self.base_url = base_url
         
         # Initialize local models via Ollama
         try:
-            self.embeddings = OllamaEmbeddings(model=embedding_model)
-            self.llm = ChatOllama(model=model_name, temperature=0.0)  # temp 0.0 for deterministic verdicts
+            self.embeddings = OllamaEmbeddings(model=embedding_model, base_url=base_url)
+            self.llm = ChatOllama(model=model_name, temperature=0.0, base_url=base_url)  # temp 0.0 for deterministic verdicts
             self.has_rag_backend = True
         except Exception as e:
             logger.error(f"Failed to initialize Ollama RAG components: {e}")

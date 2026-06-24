@@ -181,7 +181,7 @@ def run_audit(api_key: str, model: str) -> None:
     ss = st.session_state
     mode = ss.get("engine_mode", "Deterministic Rules (Regex)")
     if mode == "Local Llama RAG (Ollama)" and HAS_RAG_ENGINE:
-        engine = LocalRAGAuditEngine()
+        engine = LocalRAGAuditEngine(base_url=ss.get("ollama_url", "http://localhost:11434"))
     else:
         engine = get_engine(api_key, model)
     engine.bid_text = ss.bid_text
@@ -687,12 +687,19 @@ margin-bottom: 24px; position: relative; overflow: hidden; display: flex; flex-d
             3 · Audit Configuration
         </div>
         """, unsafe_allow_html=True)
-        st.radio(
+        engine_mode = st.radio(
             "Audit Engine Mode",
             ["Deterministic Rules (Regex)", "Local Llama RAG (Ollama)"],
             key="engine_mode",
             help="Choose between strict deterministic regex rules or local semantic LLM-based RAG evaluation."
         )
+        if engine_mode == "Local Llama RAG (Ollama)":
+            st.text_input(
+                "Ollama API Endpoint",
+                value="http://localhost:11434",
+                key="ollama_url",
+                help="Specify the URL of your local or remote/intranet Ollama server (e.g., http://10.x.x.x:11434)."
+            )
         api_key = ""
         model = ""
         st.divider()
