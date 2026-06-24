@@ -112,7 +112,7 @@ class LocalRAGAuditEngine(AuditEngine):
         )
         self.json_parser = JsonOutputParser()
 
-    def classify_document(self, filename: str, text: str) -> str:
+    def classify_document(self, filename: str, text: str, bid: Optional[Dict[str, Any]] = None) -> str:
         """Classifies the document content using the local LLM (Llama 3) via structured JSON prompt."""
         from audit_engine import DOC_TYPES
         
@@ -121,10 +121,16 @@ class LocalRAGAuditEngine(AuditEngine):
         if not preview:
             return "Unclassified Document"
             
+        categories = list(DOC_TYPES)
+        if bid and bid.get("mandatory_docs"):
+            for d in bid["mandatory_docs"]:
+                if d not in categories:
+                    categories.append(d)
+            
         system_prompt = (
             "You are a professional document classifier for procurement audits.\n"
             "Your task is to classify the uploaded document into exactly ONE of the following categories:\n"
-            + "\n".join(f"- {t}" for t in DOC_TYPES) + "\n\n"
+            + "\n".join(f"- {t}" for t in categories) + "\n\n"
             "Return a JSON object with a single key 'category' containing the exact matching category name.\n"
             "Do not include any other keys, comments, markdown tags, or explanation. "
             "Response must be valid, parseable JSON."
@@ -147,11 +153,11 @@ class LocalRAGAuditEngine(AuditEngine):
             if isinstance(res, dict) and "category" in res:
                 category = res["category"].strip()
                 # Verify match
-                for t in DOC_TYPES:
+                for t in categories:
                     if category.lower() == t.lower():
                         return t
                 # Fuzzy match
-                for t in DOC_TYPES:
+                for t in categories:
                     if t.lower() in category.lower() or category.lower() in t.lower():
                         return t
         except Exception as e:
@@ -169,6 +175,66 @@ class LocalRAGAuditEngine(AuditEngine):
             return "Manufacturer's Authorization Form (MAF)"
             
         return "Unclassified Document"
+
+    def parse_master_bid(self, text: str) -> Dict[str, Any]:
+        """Dynamically parses the Master Tender document (NIT) using local Llama 3."""
+        self.bid_text = text
+        
+        if not self.has_rag_backend:
+            # Fallback to base deterministic parser if RAG backend is not loaded
+            return super().parse_master_bid(text)
+            
+        system_prompt = (
+            "You are an expert PSU procurement auditor. Your task is to analyze the Master Tender / NIT document "
+            "and dynamically extract all requirements into a structured JSON object.\n\n"
+            "Extract the following fields:\n"
+            "1. 'tender_id': The unique Tender Number/ID (e.g. 'IOCL/HR/IT/2026/NW-4471').\n"
+            "2. 'pqc': List of Pre-Qualification Criteria. Each item must have:\n"
+            "   - 'key': 'experience' (for years of experience), 'turnover' (for financial turnover), or a short unique key for any other requirement.\n"
+            "   - 'label': Human-readable label (e.g. 'Minimum Experience').\n"
+            "   - 'threshold': Numerical value (e.g. 3 or 5).\n"
+            "   - 'unit': Unit of measurement (e.g. 'years', 'INR Crore').\n"
+            "   - 'section': Section number where this requirement appears.\n"
+            "3. 'mandatory_docs': List of documents required from the bidder (e.g. 'Manufacturer\\'s Authorization Form (MAF)', 'PAN Card', 'GST Registration', 'Audited Balance Sheet').\n"
+            "4. 'mandatory_specs': List of technical specifications listed under mandatory requirements. Each spec must have:\n"
+            "   - 'key': A short unique slug (e.g. 'architecture').\n"
+            "   - 'label': Parameter name (e.g. 'Switch Architecture (Layer-3)').\n"
+            "   - 'op': Comparison operator: 'gte' (greater than or equal to), 'lte' (less than or equal to), or 'bool' (must be present/compliant).\n"
+            "   - 'required_value': The target threshold value (e.g. 48 or 'Managed Layer-3 switch').\n"
+            "   - 'unit': Unit of measurement (e.g. 'ports', 'Gbps').\n"
+            "5. 'preferred_specs': List of technical specifications listed under preferred/desirable features. Format same as mandatory_specs.\n\n"
+            "Respond with a JSON object containing these keys. Reply with ONLY valid JSON, no explanations, no markdown styling."
+        )
+        
+        user_content = (
+            f"Tender Document Content (truncated to first 12000 characters):\n{text[:12000]}"
+        )
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("user", user_content)
+        ])
+        
+        chain = prompt | self.llm | self.json_parser
+        
+        try:
+            res = chain.invoke({})
+            pqc = res.get("pqc", [])
+            mandatory_docs = res.get("mandatory_docs", [])
+            mandatory_specs = res.get("mandatory_specs", [])
+            preferred_specs = res.get("preferred_specs", [])
+            
+            return {
+                "tender_id": str(res.get("tender_id", "")).strip(),
+                "pqc": pqc,
+                "mandatory_docs": mandatory_docs,
+                "mandatory_specs": mandatory_specs,
+                "preferred_specs": preferred_specs,
+                "raw": text
+            }
+        except Exception as e:
+            logger.error(f"Dynamic master bid parsing failed: {e}")
+            return super().parse_master_bid(text)
 
     def build_vector_store(self, files: Dict[str, str]) -> Optional[Chroma]:
         """Creates an in-memory Chroma vector database for a vendor's documents."""
@@ -259,8 +325,8 @@ class LocalRAGAuditEngine(AuditEngine):
                 query = "audited balance sheet annual financial turnover profit and loss statement Crore"
                 requirement_str = f"≥ INR {threshold:g} Crore"
             else:
-                query = "GeM registration seller profile Government e-Marketplace"
-                requirement_str = "Required"
+                query = f"{label} compliance requirement documentation verification certificate"
+                requirement_str = f"{threshold} {unit}" if threshold is not None else "Required"
 
             docs = vector_store.similarity_search(query, k=3)
             context = "\n\n".join([
@@ -277,9 +343,7 @@ class LocalRAGAuditEngine(AuditEngine):
             ---
             
             Evaluate if the vendor satisfies this requirement.
-            For "experience": Find the highest number of years of experience in supplying/commissioning networking gear.
-            For "turnover": Find the annual financial turnover (or average turnover).
-            For "gem": Determine if they are registered on the GeM portal.
+            Find the actual value/status offered by the vendor for the parameter "{label}" and compare it to the required "{requirement_str}".
             
             Return a JSON object with:
             {{
@@ -458,7 +522,7 @@ class LocalRAGAuditEngine(AuditEngine):
 
         # 1. Inventory & classification
         for fname, text in files.items():
-            doc_type = self.classify_document(fname, text)
+            doc_type = self.classify_document(fname, text, bid)
             readability = self.assess_readability(text, errors.get(fname))
             result.inventory.append(InventoryItem(fname, doc_type, readability))
 
