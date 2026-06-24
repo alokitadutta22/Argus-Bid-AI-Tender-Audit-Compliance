@@ -18,6 +18,7 @@ import re
 import time
 import base64
 import logging
+import html
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
