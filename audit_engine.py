@@ -760,7 +760,7 @@ class AuditEngine:
         low = text.lower()
 
         has_letterhead = any(k in low for k in ["letterhead", "oem", "original equipment manufacturer"]) \
-            or bool(re.search(r"(cisco|juniper|hp|hpe|aruba|dell|arista|extreme|huawei)\b", low))
+            or bool(re.search(r"(cisco|juniper|hp|hpe|aruba|dell|arista|extreme)\b", low))
         has_auth = "authoriz" in low
         tender_present = bool(tender_id) and tender_id.lower() in low
 
