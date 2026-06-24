@@ -112,6 +112,64 @@ class LocalRAGAuditEngine(AuditEngine):
         )
         self.json_parser = JsonOutputParser()
 
+    def classify_document(self, filename: str, text: str) -> str:
+        """Classifies the document content using the local LLM (Llama 3) via structured JSON prompt."""
+        from audit_engine import DOC_TYPES
+        
+        # Prepare a clean preview of the text (first 3000 chars)
+        preview = (text or "").strip()
+        if not preview:
+            return "Unclassified Document"
+            
+        system_prompt = (
+            "You are a professional document classifier for procurement audits.\n"
+            "Your task is to classify the uploaded document into exactly ONE of the following categories:\n"
+            + "\n".join(f"- {t}" for t in DOC_TYPES) + "\n\n"
+            "Return a JSON object with a single key 'category' containing the exact matching category name.\n"
+            "Do not include any other keys, comments, markdown tags, or explanation. "
+            "Response must be valid, parseable JSON."
+        )
+        
+        user_content = (
+            f"Filename: {filename}\n\n"
+            f"Content (first 2500 characters):\n{preview[:2500]}"
+        )
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("user", user_content)
+        ])
+        
+        chain = prompt | self.llm | self.json_parser
+        
+        try:
+            res = chain.invoke({})
+            if isinstance(res, dict) and "category" in res:
+                category = res["category"].strip()
+                # Verify match
+                for t in DOC_TYPES:
+                    if category.lower() == t.lower():
+                        return t
+                # Fuzzy match
+                for t in DOC_TYPES:
+                    if t.lower() in category.lower() or category.lower() in t.lower():
+                        return t
+        except Exception as e:
+            logger.error(f"LLM classification failed for {filename}: {e}")
+            
+        # Fallback to simple keyword check if LLM fails completely
+        low = preview.lower()
+        if "pan" in low and ("card" in low or "permanent account" in low):
+            return "PAN Card"
+        if "gstin" in low or "goods and services tax" in low or "gst" in low:
+            return "GST Registration"
+        if "balance sheet" in low or "profit and loss" in low:
+            return "Audited Balance Sheet"
+        if "authorization" in low and ("manufacturer" in low or "oem" in low):
+            return "Manufacturer's Authorization Form (MAF)"
+            
+        return "Unclassified Document"
+
     def build_vector_store(self, files: Dict[str, str]) -> Optional[Chroma]:
         """Creates an in-memory Chroma vector database for a vendor's documents."""
         if not self.has_rag_backend:
