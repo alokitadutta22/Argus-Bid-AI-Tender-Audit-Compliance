@@ -46,10 +46,11 @@ logger = logging.getLogger("rag_engine")
 logger.setLevel(logging.INFO)
 
 
-def create_langchain_documents(files: Dict[str, str], text_splitter: RecursiveCharacterTextSplitter) -> List[Document]:
-    """Converts the raw file dictionary into chunked LangChain Documents with accurate file and page metadata."""
+def create_langchain_documents(files: Dict[str, str], text_splitter: RecursiveCharacterTextSplitter, file_types: Optional[Dict[str, str]] = None) -> List[Document]:
+    """Converts the raw file dictionary into chunked LangChain Documents with accurate file, page, doc_type, and parent_content metadata."""
     documents = []
     for filename, text in files.items():
+        doc_type = file_types.get(filename, "Unclassified Document") if file_types else "Unclassified Document"
         # Split text into pages using page markers: "--- PAGE X ---"
         parts = re.split(r"--- PAGE (\d+) ---", text)
         if not parts:
@@ -62,7 +63,7 @@ def create_langchain_documents(files: Dict[str, str], text_splitter: RecursiveCh
             for chunk in chunks:
                 documents.append(Document(
                     page_content=chunk,
-                    metadata={"source": filename, "page": 1}
+                    metadata={"source": filename, "page": 1, "doc_type": doc_type, "parent_content": first_part}
                 ))
         
         # Subsequent parts alternate between page number (as string) and page content
@@ -78,7 +79,7 @@ def create_langchain_documents(files: Dict[str, str], text_splitter: RecursiveCh
                 for chunk in chunks:
                     documents.append(Document(
                         page_content=chunk,
-                        metadata={"source": filename, "page": page_num}
+                        metadata={"source": filename, "page": page_num, "doc_type": doc_type, "parent_content": page_content}
                     ))
                     
     return documents
@@ -236,12 +237,12 @@ class LocalRAGAuditEngine(AuditEngine):
             logger.error(f"Dynamic master bid parsing failed: {e}")
             return super().parse_master_bid(text)
 
-    def build_vector_store(self, files: Dict[str, str]) -> Optional[Chroma]:
+    def build_vector_store(self, files: Dict[str, str], file_types: Optional[Dict[str, str]] = None) -> Optional[Chroma]:
         """Creates an in-memory Chroma vector database for a vendor's documents."""
         if not self.has_rag_backend:
             return None
         
-        docs = create_langchain_documents(files, self.text_splitter)
+        docs = create_langchain_documents(files, self.text_splitter, file_types=file_types)
         if not docs:
             return None
             
@@ -256,6 +257,110 @@ class LocalRAGAuditEngine(AuditEngine):
             logger.error(f"Failed to create Chroma vector store: {e}")
             return None
 
+    def _similarity_search_filtered(self, vector_store: Chroma, query: str, k: int = 3, doc_type: Optional[str] = None) -> List[Document]:
+        """Performs a hybrid search combining dense similarity search and sparse BM25 search via Reciprocal Rank Fusion."""
+        # 1. Retrieve all documents from Chroma
+        try:
+            res = vector_store.get()
+            contents = res.get("documents", []) or []
+            metadatas = res.get("metadatas", []) or []
+            all_docs = [Document(page_content=c, metadata=m) for c, m in zip(contents, metadatas)]
+        except Exception as e:
+            logger.error(f"Failed to retrieve documents from Chroma for BM25: {e}")
+            # Fallback to standard similarity search
+            if doc_type:
+                try:
+                    docs = vector_store.similarity_search(query, k=k, filter={"doc_type": doc_type})
+                    if docs:
+                        return docs
+                except Exception:
+                    pass
+            return vector_store.similarity_search(query, k=k)
+
+        # Apply metadata filtering if specified
+        if doc_type:
+            filtered_docs = [d for d in all_docs if d.metadata.get("doc_type") == doc_type]
+        else:
+            filtered_docs = all_docs
+
+        if not filtered_docs:
+            filtered_docs = all_docs
+
+        if not filtered_docs:
+            return []
+
+        # 2. Dense search (Vector similarity search)
+        vector_results = []
+        try:
+            filter_dict = {"doc_type": doc_type} if doc_type else None
+            vector_results = vector_store.similarity_search(query, k=max(10, k * 2), filter=filter_dict)
+        except Exception as e:
+            logger.warning(f"Vector search failed: {e}. Falling back to sparse search only.")
+
+        # 3. Sparse search (BM25)
+        bm25_results = []
+        try:
+            import re
+            def tokenize(text):
+                return re.findall(r'\w+', text.lower())
+
+            corpus = [tokenize(d.page_content) for d in filtered_docs]
+            from rank_bm25 import BM25Okapi
+            bm25 = BM25Okapi(corpus)
+            
+            tokenized_query = tokenize(query)
+            scores = bm25.get_scores(tokenized_query)
+            doc_scores = sorted(zip(filtered_docs, scores), key=lambda x: x[1], reverse=True)
+            bm25_results = [d for d, score in doc_scores if score > 0][:max(10, k * 2)]
+        except Exception as e:
+            logger.warning(f"BM25 search failed: {e}. Falling back to dense search only.")
+            
+        if not vector_results and not bm25_results:
+            return filtered_docs[:k]
+        if not vector_results:
+            return bm25_results[:k]
+        if not bm25_results:
+            return vector_results[:k]
+
+        # 4. Reciprocal Rank Fusion (RRF)
+        rrf_scores = {}
+        rrf_constant = 60
+        
+        def doc_id(doc):
+            return (doc.metadata.get("source", ""), doc.metadata.get("page", 1), doc.page_content)
+
+        # Rank vector results
+        for rank, doc in enumerate(vector_results, start=1):
+            key = doc_id(doc)
+            rrf_scores[key] = (1 / (rrf_constant + rank), doc)
+
+        # Rank BM25 results
+        for rank, doc in enumerate(bm25_results, start=1):
+            key = doc_id(doc)
+            if key in rrf_scores:
+                prev_score, _ = rrf_scores[key]
+                rrf_scores[key] = (prev_score + (1 / (rrf_constant + rank)), doc)
+            else:
+                rrf_scores[key] = (1 / (rrf_constant + rank), doc)
+
+        # Sort by RRF score
+        sorted_rrf = sorted(rrf_scores.values(), key=lambda x: x[0], reverse=True)
+        return [doc for score, doc in sorted_rrf][:k]
+
+    def _build_context_from_docs(self, docs: List[Document]) -> str:
+        """Constructs and deduplicates surrounding page context from a list of retrieved documents."""
+        seen = set()
+        context_parts = []
+        for d in docs:
+            src = d.metadata.get("source", "")
+            pg = d.metadata.get("page", 1)
+            key = (src, pg)
+            if key not in seen:
+                seen.add(key)
+                parent_text = d.metadata.get("parent_content", d.page_content)
+                context_parts.append(f"[File: {src}, Page: {pg}]\n{parent_text}")
+        return "\n\n".join(context_parts)
+
     def validate_maf_rag(self, vector_store: Chroma, tender_id: str) -> MAFResult:
         """Audits the Manufacturer's Authorization Form (MAF) requirement using local RAG."""
         query = (
@@ -264,11 +369,8 @@ class LocalRAGAuditEngine(AuditEngine):
         )
         
         # Retrieve context from vector store
-        docs = vector_store.similarity_search(query, k=3)
-        context = "\n\n".join([
-            f"[File: {d.metadata.get('source')}, Page: {d.metadata.get('page')}]\n{d.page_content}"
-            for d in docs
-        ])
+        docs = self._similarity_search_filtered(vector_store, query, k=3, doc_type="Manufacturer's Authorization Form (MAF)")
+        context = self._build_context_from_docs(docs)
 
         prompt = ChatPromptTemplate.from_template("""
         You are a PSU procurement auditor. Your job is to verify if the vendor submitted a valid Manufacturer's Authorization Form (MAF).
@@ -328,11 +430,14 @@ class LocalRAGAuditEngine(AuditEngine):
                 query = f"{label} compliance requirement documentation verification certificate"
                 requirement_str = f"{threshold} {unit}" if threshold is not None else "Required"
 
-            docs = vector_store.similarity_search(query, k=3)
-            context = "\n\n".join([
-                f"[File: {d.metadata.get('source')}, Page: {d.metadata.get('page')}]\n{d.page_content}"
-                for d in docs
-            ])
+            doc_type = None
+            if key == "experience":
+                doc_type = "Experience / Past Performance Certificate"
+            elif key == "turnover":
+                doc_type = "Audited Balance Sheet"
+
+            docs = self._similarity_search_filtered(vector_store, query, k=3, doc_type=doc_type)
+            context = self._build_context_from_docs(docs)
 
             prompt = ChatPromptTemplate.from_template("""
             You are a PSU procurement auditor. Auditing PQC Parameter: "{label}" (Requirement: {requirement_str}).
@@ -398,11 +503,8 @@ class LocalRAGAuditEngine(AuditEngine):
         
         # Search queries
         query = f"Technical specifications proposed model parameter value: {label}"
-        docs = vector_store.similarity_search(query, k=3)
-        context = "\n\n".join([
-            f"[File: {d.metadata.get('source')}, Page: {d.metadata.get('page')}]\n{d.page_content}"
-            for d in docs
-        ])
+        docs = self._similarity_search_filtered(vector_store, query, k=3, doc_type="Technical Datasheet / Bid")
+        context = self._build_context_from_docs(docs)
 
         prompt = ChatPromptTemplate.from_template("""
         You are a PSU procurement auditor auditing technical parameter compliance:
@@ -477,11 +579,8 @@ class LocalRAGAuditEngine(AuditEngine):
     def detect_deviations_rag(self, vector_store: Chroma) -> List[str]:
         """Identifies vendor deviations semantically using local RAG."""
         query = "deviation statement cannot supply instead we will provide not supported alternative exception"
-        docs = vector_store.similarity_search(query, k=4)
-        context = "\n\n".join([
-            f"[File: {d.metadata.get('source')}, Page: {d.metadata.get('page')}]\n{d.page_content}"
-            for d in docs
-        ])
+        docs = self._similarity_search_filtered(vector_store, query, k=4, doc_type="Deviation Statement")
+        context = self._build_context_from_docs(docs)
 
         prompt = ChatPromptTemplate.from_template("""
         You are a technical compliance auditor. Identify any explicit deviations or limitations proposed by the vendor.
@@ -521,8 +620,10 @@ class LocalRAGAuditEngine(AuditEngine):
         result = VendorResult(name=name)
 
         # 1. Inventory & classification
+        file_types = {}
         for fname, text in files.items():
             doc_type = self.classify_document(fname, text, bid)
+            file_types[fname] = doc_type
             readability = self.assess_readability(text, errors.get(fname))
             result.inventory.append(InventoryItem(fname, doc_type, readability))
 
@@ -530,7 +631,7 @@ class LocalRAGAuditEngine(AuditEngine):
         has_gem_doc = "GeM Registration" in present_types
 
         # 2. Build local Chroma vector database in memory
-        vector_store = self.build_vector_store(files)
+        vector_store = self.build_vector_store(files, file_types=file_types)
         if not vector_store:
             # Fallback if DB build failed
             return super().analyze_vendor(name, files, errors, bid)

@@ -44,6 +44,18 @@ try:
 except Exception:
     HAS_ANTHROPIC = False
 
+try:
+    import pytesseract  # type: ignore
+    HAS_PYTESSERACT = True
+except Exception:
+    HAS_PYTESSERACT = False
+
+try:
+    import easyocr  # type: ignore
+    HAS_EASYOCR = True
+except Exception:
+    HAS_EASYOCR = False
+
 
 # ===========================================================================
 # SECTION 1 — SEMANTIC STATUS VOCABULARY
@@ -267,10 +279,127 @@ def find_file_and_page_for_match(text: str, match_index: int) -> Tuple[str, int]
     return "", 1
 
 
+def format_table_as_markdown(table: List[List[Optional[str]]]) -> str:
+    """Format a raw table list-of-lists from pdfplumber into GitHub Flavored Markdown."""
+    if not table or not any(table):
+        return ""
+    
+    cleaned_table = []
+    for row in table:
+        if not row:
+            continue
+        cleaned_row = []
+        for cell in row:
+            if cell is None:
+                val = ""
+            else:
+                val = str(cell).replace("\n", " ").replace("|", "\\|").strip()
+            cleaned_row.append(val)
+        cleaned_table.append(cleaned_row)
+        
+    if not cleaned_table:
+        return ""
+        
+    headers = cleaned_table[0]
+    if len(cleaned_table) == 1:
+        headers = [f"Col {i+1}" for i in range(len(cleaned_table[0]))]
+        rows = cleaned_table
+    else:
+        rows = cleaned_table[1:]
+        
+    md = []
+    md.append("| " + " | ".join(headers) + " |")
+    md.append("| " + " | ".join(["---"] * len(headers)) + " |")
+    for row in rows:
+        if len(row) < len(headers):
+            row = row + [""] * (len(headers) - len(row))
+        elif len(row) > len(headers):
+            row = row[:len(headers)]
+        md.append("| " + " | ".join(row) + " |")
+        
+    return "\n".join(md)
+
+
+def perform_ocr_on_page(page) -> str:
+    """Attempts to run OCR on a pdfplumber page using pytesseract or easyocr."""
+    if not (HAS_PYTESSERACT or HAS_EASYOCR):
+        return ""
+        
+    try:
+        # Convert page to PIL image
+        im = page.to_image(resolution=150)
+        pil_img = im.original
+        
+        # 1. Try pytesseract first
+        if HAS_PYTESSERACT:
+            try:
+                import pytesseract
+                text = pytesseract.image_to_string(pil_img)
+                if text and len(text.strip()) > 10:
+                    return text.strip()
+            except Exception as e:
+                logging.warning(f"pytesseract OCR failed: {e}")
+                
+        # 2. Try easyocr next
+        if HAS_EASYOCR:
+            try:
+                import easyocr
+                import numpy as np
+                global _EASYOCR_READER
+                if '_EASYOCR_READER' not in globals():
+                    _EASYOCR_READER = easyocr.Reader(['en'], gpu=False)
+                
+                img_np = np.array(pil_img)
+                results = _EASYOCR_READER.readtext(img_np)
+                if results:
+                    text = "\n".join([res[1] for res in results])
+                    if text and len(text.strip()) > 10:
+                        return text.strip()
+            except Exception as e:
+                logging.warning(f"easyocr OCR failed: {e}")
+                
+    except Exception as e:
+        logging.error(f"Failed to render page for OCR: {e}")
+        
+    return ""
+
+
 def extract_text_from_pdf_bytes(data: bytes) -> Tuple[str, Optional[str]]:
-    """Extract text from raw PDF bytes using pypdf or pdfplumber."""
+    """Extract text from raw PDF bytes using pdfplumber (primary) or pypdf (fallback)."""
     text = ""
     last_error: Optional[str] = None
+
+    if HAS_PDFPLUMBER:
+        try:
+            with pdfplumber.open(io.BytesIO(data)) as pdf:
+                pages = []
+                for i, page in enumerate(pdf.pages, start=1):
+                    ptext = page.extract_text() or ""
+                    
+                    # If page has no text, try OCR fallback
+                    if len(ptext.strip()) < 10:
+                        ocr_text = perform_ocr_on_page(page)
+                        if ocr_text:
+                            ptext = ocr_text + "\n[OCR Fallback Content]"
+                    
+                    # Extract tables
+                    tables = page.extract_tables()
+                    md_tables = []
+                    if tables:
+                        for tbl in tables:
+                            tbl_md = format_table_as_markdown(tbl)
+                            if tbl_md:
+                                md_tables.append(tbl_md)
+                                
+                    if md_tables:
+                        ptext += "\n\n### Extracted Tables:\n" + "\n\n".join(md_tables)
+                        
+                    pages.append(f"--- PAGE {i} ---\n{ptext}")
+                text = "\n".join(pages).strip()
+            if text:
+                return text, None
+        except Exception as exc:
+            last_error = f"pdfplumber failed: {exc}"
 
     if HAS_PYPDF:
         try:
@@ -283,20 +412,7 @@ def extract_text_from_pdf_bytes(data: bytes) -> Tuple[str, Optional[str]]:
             if text:
                 return text, None
         except Exception as exc:
-            last_error = f"pypdf failed: {exc}"
-
-    if HAS_PDFPLUMBER:
-        try:
-            with pdfplumber.open(io.BytesIO(data)) as pdf:
-                pages = []
-                for i, page in enumerate(pdf.pages, start=1):
-                    ptext = page.extract_text() or ""
-                    pages.append(f"--- PAGE {i} ---\n{ptext}")
-                text = "\n".join(pages).strip()
-            if text:
-                return text, None
-        except Exception as exc:
-            last_error = f"pdfplumber failed: {exc}"
+            last_error = (last_error or "") + f" | pypdf failed: {exc}"
 
     if not text:
         return "", last_error or "No text could be extracted (scanned image / empty PDF)."
