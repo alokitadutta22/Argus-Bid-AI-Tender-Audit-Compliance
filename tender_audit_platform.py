@@ -694,10 +694,10 @@ margin-bottom: 24px; position: relative; overflow: hidden; display: flex; flex-d
             help="Choose between strict deterministic regex rules or local semantic LLM-based RAG evaluation."
         )
         enable_ocr = st.checkbox(
-            "Enable OCR Fallback (Scanned PDFs)",
+            "Force Heavy OCR (EasyOCR CPU)",
             value=False,
             key="enable_ocr",
-            help="Uses pytesseract/easyocr to scan unreadable pages. Extremely slow on CPU."
+            help="Forces EasyOCR to scan unreadable pages on CPU. Note: Fast OCR (Tesseract) already runs automatically if installed on the system."
         )
         if engine_mode == "Local Llama RAG (Ollama)":
             st.text_input(

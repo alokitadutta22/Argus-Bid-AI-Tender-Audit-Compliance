@@ -387,10 +387,17 @@ def extract_text_from_pdf_bytes(data: bytes, enable_ocr: bool = False) -> Tuple[
                     ptext = page.extract_text() or ""
                     
                     # If page has no text, try OCR fallback
-                    if enable_ocr and len(ptext.strip()) < 10:
-                        ocr_text = perform_ocr_on_page(page)
-                        if ocr_text:
-                            ptext = ocr_text + "\n[OCR Fallback Content]"
+                    if len(ptext.strip()) < 10:
+                        # Auto-OCR conditions:
+                        # 1. User explicitly enabled it (enable_ocr=True)
+                        # 2. OR pytesseract is available (which is fast, local, and has no download latency)
+                        # 3. OR easyocr is already initialized (warmed up in globals())
+                        is_fast_ocr_available = HAS_PYTESSERACT or ('_EASYOCR_READER' in globals())
+                        
+                        if enable_ocr or is_fast_ocr_available:
+                            ocr_text = perform_ocr_on_page(page)
+                            if ocr_text:
+                                ptext = ocr_text + "\n[OCR Fallback Content]"
                     
                     # Extract tables only if table structures (lines or rects) are present
                     md_tables = []
