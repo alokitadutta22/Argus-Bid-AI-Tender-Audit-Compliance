@@ -13,6 +13,7 @@ from __future__ import annotations
 import re
 import json
 import logging
+import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 # Import core audit engine classes & constants
@@ -41,13 +42,66 @@ from langchain_chroma import Chroma
 from langchain_ollama import OllamaEmbeddings, ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
+from langchain_classic.retrievers import ParentDocumentRetriever
+from langchain_core.stores import InMemoryStore
 
 logger = logging.getLogger("rag_engine")
 logger.setLevel(logging.INFO)
 
 
-def create_langchain_documents(files: Dict[str, str], text_splitter: RecursiveCharacterTextSplitter, file_types: Optional[Dict[str, str]] = None) -> List[Document]:
-    """Converts the raw file dictionary into chunked LangChain Documents with accurate file, page, doc_type, and parent_content metadata."""
+def parse_json_safely(text: str) -> Any:
+    """Robust JSON extraction and parsing to handle conversational prefixes or minor LLM malformations."""
+    text_clean = text.strip()
+    # Remove markdown code fences if present
+    if text_clean.startswith("```"):
+        text_clean = re.sub(r"^```(?:json)?\n", "", text_clean)
+        text_clean = re.sub(r"\n```$", "", text_clean)
+        text_clean = text_clean.strip()
+        
+    # Find start of JSON structure
+    start_idx = -1
+    for i, char in enumerate(text_clean):
+        if char in ("{", "["):
+            start_idx = i
+            break
+            
+    if start_idx != -1:
+        # Find end of JSON structure
+        end_idx = -1
+        target_char = "}" if text_clean[start_idx] == "{" else "]"
+        bracket_count = 0
+        open_char = text_clean[start_idx]
+        
+        for i in range(start_idx, len(text_clean)):
+            if text_clean[i] == open_char:
+                bracket_count += 1
+            elif text_clean[i] == target_char:
+                bracket_count -= 1
+                if bracket_count == 0:
+                    end_idx = i
+                    break
+        if end_idx != -1:
+            json_str = text_clean[start_idx:end_idx+1]
+            try:
+                return json.loads(json_str)
+            except Exception:
+                # If standard json fails, try fixing minor issues like trailing commas or unquoted arithmetic/boolean expressions
+                try:
+                    # Clean up unquoted expressions like 1+1 or 1+1 PSU
+                    json_str_cleaned = re.sub(r":\s*([0-9]+\+[0-9]+)\s*(,|$)", r': "\1"\2', json_str)
+                    return json.loads(json_str_cleaned)
+                except Exception:
+                    pass
+    
+    # Fallback to direct json.loads
+    try:
+        return json.loads(text_clean)
+    except Exception:
+        raise ValueError(f"Could not parse JSON from output: {text}")
+
+
+def create_langchain_documents(files: Dict[str, str], text_splitter: Optional[Any] = None, file_types: Optional[Dict[str, str]] = None) -> List[Document]:
+    """Converts the raw file dictionary into page-level LangChain Documents with source, page, and doc_type metadata."""
     documents = []
     for filename, text in files.items():
         doc_type = file_types.get(filename, "Unclassified Document") if file_types else "Unclassified Document"
@@ -59,12 +113,10 @@ def create_langchain_documents(files: Dict[str, str], text_splitter: RecursiveCh
         # The first part is any text preceding the first PAGE marker
         first_part = parts[0].strip()
         if first_part:
-            chunks = text_splitter.split_text(first_part)
-            for chunk in chunks:
-                documents.append(Document(
-                    page_content=chunk,
-                    metadata={"source": filename, "page": 1, "doc_type": doc_type, "parent_content": first_part}
-                ))
+            documents.append(Document(
+                page_content=first_part,
+                metadata={"source": filename, "page": 1, "doc_type": doc_type}
+            ))
         
         # Subsequent parts alternate between page number (as string) and page content
         for i in range(1, len(parts), 2):
@@ -75,12 +127,10 @@ def create_langchain_documents(files: Dict[str, str], text_splitter: RecursiveCh
             
             page_content = parts[i+1].strip() if i+1 < len(parts) else ""
             if page_content:
-                chunks = text_splitter.split_text(page_content)
-                for chunk in chunks:
-                    documents.append(Document(
-                        page_content=chunk,
-                        metadata={"source": filename, "page": page_num, "doc_type": doc_type, "parent_content": page_content}
-                    ))
+                documents.append(Document(
+                    page_content=page_content,
+                    metadata={"source": filename, "page": page_num, "doc_type": doc_type}
+                ))
                     
     return documents
 
@@ -107,9 +157,14 @@ class LocalRAGAuditEngine(AuditEngine):
             logger.error(f"Failed to initialize Ollama RAG components: {e}")
             self.has_rag_backend = False
 
-        self.text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=700,
-            chunk_overlap=150
+        # Define splitters for ParentDocumentRetriever (Phase 4)
+        self.parent_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=2000,
+            chunk_overlap=200
+        )
+        self.child_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=400,
+            chunk_overlap=50
         )
         self.json_parser = JsonOutputParser()
 
@@ -147,10 +202,11 @@ class LocalRAGAuditEngine(AuditEngine):
             ("user", user_content)
         ])
         
-        chain = prompt | self.llm | self.json_parser
+        chain = prompt | self.llm
         
         try:
-            res = chain.invoke({})
+            resp = chain.invoke({})
+            res = parse_json_safely(resp.content)
             if isinstance(res, dict) and "category" in res:
                 category = res["category"].strip()
                 # Verify match
@@ -207,11 +263,12 @@ class LocalRAGAuditEngine(AuditEngine):
             ("user", user_content)
         ])
         
-        chain = prompt | self.llm | self.json_parser
+        chain = prompt | self.llm
         
         classified = {}
         try:
-            res = chain.invoke({})
+            resp = chain.invoke({})
+            res = parse_json_safely(resp.content)
             if isinstance(res, dict):
                 for fname in files.keys():
                     val = res.get(fname)
@@ -279,10 +336,11 @@ class LocalRAGAuditEngine(AuditEngine):
             ("user", user_content)
         ])
         
-        chain = prompt | self.llm | self.json_parser
+        chain = prompt | self.llm
         
         try:
-            res = chain.invoke({})
+            resp = chain.invoke({})
+            res = parse_json_safely(resp.content)
             pqc = res.get("pqc", [])
             mandatory_docs = res.get("mandatory_docs", [])
             mandatory_specs = res.get("mandatory_specs", [])
@@ -305,54 +363,78 @@ class LocalRAGAuditEngine(AuditEngine):
         if not self.has_rag_backend:
             return None
         
-        docs = create_langchain_documents(files, self.text_splitter, file_types=file_types)
-        if not docs:
+        page_docs = create_langchain_documents(files, file_types=file_types)
+        if not page_docs:
             return None
             
         try:
             # Create an in-memory Chroma collection
-            vector_store = Chroma.from_documents(
-                documents=docs,
-                embedding=self.embeddings
+            vector_store = Chroma(
+                collection_name=f"vendor_{uuid.uuid4().hex}",
+                embedding_function=self.embeddings
             )
-            return vector_store
-        except Exception as e:
-            logger.error(f"Failed to create Chroma vector store: {e}")
-            return None
-
-    def _similarity_search_filtered(self, vector_store: Chroma, query: str, k: int = 3, doc_type: Optional[str] = None) -> List[Document]:
-        """Performs a hybrid search combining dense similarity search and sparse BM25 search via Reciprocal Rank Fusion."""
-        # 1. Retrieve all documents from Chroma
-        try:
+            store = InMemoryStore()
+            
+            # Setup ParentDocumentRetriever (Phase 4)
+            retriever = ParentDocumentRetriever(
+                vectorstore=vector_store,
+                docstore=store,
+                child_splitter=self.child_splitter,
+                parent_splitter=self.parent_splitter,
+            )
+            
+            retriever.add_documents(page_docs)
+            
+            # Attach the store to the vector_store so we can resolve parent texts during search
+            vector_store.docstore = store
+            
+            # Pre-build and cache the BM25 index on all child documents (Phase 3 Optimization)
             res = vector_store.get()
             contents = res.get("documents", []) or []
             metadatas = res.get("metadatas", []) or []
             all_docs = [Document(page_content=c, metadata=m) for c, m in zip(contents, metadatas)]
+            
+            import re
+            def tokenize(text):
+                return re.findall(r'\w+', text.lower())
+            
+            vector_store.all_docs = all_docs
+            vector_store.tokenize_fn = tokenize
+            
+            if all_docs:
+                from rank_bm25 import BM25Okapi
+                corpus = [tokenize(d.page_content) for d in all_docs]
+                vector_store.bm25 = BM25Okapi(corpus)
+            else:
+                vector_store.bm25 = None
+                
+            return vector_store
         except Exception as e:
-            logger.error(f"Failed to retrieve documents from Chroma for BM25: {e}")
-            # Fallback to standard similarity search
-            if doc_type:
-                try:
-                    docs = vector_store.similarity_search(query, k=k, filter={"doc_type": doc_type})
-                    if docs:
-                        return docs
-                except Exception:
-                    pass
-            return vector_store.similarity_search(query, k=k)
+            logger.error(f"Failed to create Chroma vector store and ParentDocumentRetriever: {e}")
+            return None
 
-        # Apply metadata filtering if specified
+    def _similarity_search_filtered(self, vector_store: Chroma, query: str, k: int = 3, doc_type: Optional[str] = None) -> List[Document]:
+        """Performs a hybrid search combining dense similarity search and sparse BM25 search via Reciprocal Rank Fusion."""
+        # 1. Retrieve filtered child documents from the pre-cached documents to save database lookup overhead (Phase 2 & 3)
+        all_docs = getattr(vector_store, "all_docs", [])
+        
+        # Apply metadata pre-filtering if specified at database level (Phase 2 Optimization)
         if doc_type:
-            filtered_docs = [d for d in all_docs if d.metadata.get("doc_type") == doc_type]
+            try:
+                res = vector_store.get(where={"doc_type": doc_type})
+                contents = res.get("documents", []) or []
+                metadatas = res.get("metadatas", []) or []
+                filtered_docs = [Document(page_content=c, metadata=m) for c, m in zip(contents, metadatas)]
+            except Exception as e:
+                logger.error(f"Failed to get filtered docs from Chroma: {e}")
+                filtered_docs = [d for d in all_docs if d.metadata.get("doc_type") == doc_type]
         else:
             filtered_docs = all_docs
 
         if not filtered_docs:
             filtered_docs = all_docs
 
-        if not filtered_docs:
-            return []
-
-        # 2. Dense search (Vector similarity search)
+        # 2. Dense search (Vector similarity search with database-level metadata filtering)
         vector_results = []
         try:
             filter_dict = {"doc_type": doc_type} if doc_type else None
@@ -360,55 +442,78 @@ class LocalRAGAuditEngine(AuditEngine):
         except Exception as e:
             logger.warning(f"Vector search failed: {e}. Falling back to sparse search only.")
 
-        # 3. Sparse search (BM25)
+        # 3. Sparse search (BM25 reusing the cached pre-built index)
         bm25_results = []
         try:
-            import re
-            def tokenize(text):
-                return re.findall(r'\w+', text.lower())
-
-            corpus = [tokenize(d.page_content) for d in filtered_docs]
-            from rank_bm25 import BM25Okapi
-            bm25 = BM25Okapi(corpus)
+            bm25 = getattr(vector_store, "bm25", None)
+            tokenize = getattr(vector_store, "tokenize_fn", None)
             
-            tokenized_query = tokenize(query)
-            scores = bm25.get_scores(tokenized_query)
-            doc_scores = sorted(zip(filtered_docs, scores), key=lambda x: x[1], reverse=True)
-            bm25_results = [d for d, score in doc_scores if score > 0][:max(10, k * 2)]
+            if bm25 and tokenize:
+                tokenized_query = tokenize(query)
+                scores = bm25.get_scores(tokenized_query)
+                
+                # Pair cached all_docs with scores
+                doc_scores = zip(all_docs, scores)
+                
+                # Filter by doc_type if specified
+                if doc_type:
+                    doc_scores = [(d, s) for d, s in doc_scores if d.metadata.get("doc_type") == doc_type]
+                else:
+                    doc_scores = list(doc_scores)
+                    
+                sorted_docs = sorted(doc_scores, key=lambda x: x[1], reverse=True)
+                bm25_results = [d for d, score in sorted_docs if score > 0][:max(10, k * 2)]
         except Exception as e:
             logger.warning(f"BM25 search failed: {e}. Falling back to dense search only.")
             
         if not vector_results and not bm25_results:
-            return filtered_docs[:k]
-        if not vector_results:
-            return bm25_results[:k]
-        if not bm25_results:
-            return vector_results[:k]
+            retrieved_docs = filtered_docs[:k]
+        elif not vector_results:
+            retrieved_docs = bm25_results[:k]
+        elif not bm25_results:
+            retrieved_docs = vector_results[:k]
+        else:
+            # 4. Reciprocal Rank Fusion (RRF)
+            rrf_scores = {}
+            rrf_constant = 60
+            
+            def doc_id(doc):
+                return (doc.metadata.get("source", ""), doc.metadata.get("page", 1), doc.page_content)
 
-        # 4. Reciprocal Rank Fusion (RRF)
-        rrf_scores = {}
-        rrf_constant = 60
-        
-        def doc_id(doc):
-            return (doc.metadata.get("source", ""), doc.metadata.get("page", 1), doc.page_content)
-
-        # Rank vector results
-        for rank, doc in enumerate(vector_results, start=1):
-            key = doc_id(doc)
-            rrf_scores[key] = (1 / (rrf_constant + rank), doc)
-
-        # Rank BM25 results
-        for rank, doc in enumerate(bm25_results, start=1):
-            key = doc_id(doc)
-            if key in rrf_scores:
-                prev_score, _ = rrf_scores[key]
-                rrf_scores[key] = (prev_score + (1 / (rrf_constant + rank)), doc)
-            else:
+            # Rank vector results
+            for rank, doc in enumerate(vector_results, start=1):
+                key = doc_id(doc)
                 rrf_scores[key] = (1 / (rrf_constant + rank), doc)
 
-        # Sort by RRF score
-        sorted_rrf = sorted(rrf_scores.values(), key=lambda x: x[0], reverse=True)
-        return [doc for score, doc in sorted_rrf][:k]
+            # Rank BM25 results
+            for rank, doc in enumerate(bm25_results, start=1):
+                key = doc_id(doc)
+                if key in rrf_scores:
+                    prev_score, _ = rrf_scores[key]
+                    rrf_scores[key] = (prev_score + (1 / (rrf_constant + rank)), doc)
+                else:
+                    rrf_scores[key] = (1 / (rrf_constant + rank), doc)
+
+            # Sort by RRF score
+            sorted_rrf = sorted(rrf_scores.values(), key=lambda x: x[0], reverse=True)
+            retrieved_docs = [doc for score, doc in sorted_rrf][:k]
+
+        # Resolve parent contents using the docstore (Phase 4 Parent-Child Retrieval)
+        store = getattr(vector_store, "docstore", None)
+        if store:
+            doc_ids = [d.metadata.get("doc_id") for d in retrieved_docs if d.metadata.get("doc_id")]
+            if doc_ids:
+                try:
+                    parent_docs = store.mget(doc_ids)
+                    parent_map = {doc_id: p.page_content for doc_id, p in zip(doc_ids, parent_docs) if p}
+                    for d in retrieved_docs:
+                        d_id = d.metadata.get("doc_id")
+                        if d_id and d_id in parent_map:
+                            d.metadata["parent_content"] = parent_map[d_id]
+                except Exception as e:
+                    logger.error(f"Failed to retrieve parent documents from docstore: {e}")
+
+        return retrieved_docs
 
     def _build_context_from_docs(self, docs: List[Document]) -> str:
         """Constructs and deduplicates surrounding page context from a list of retrieved documents."""
@@ -431,8 +536,8 @@ class LocalRAGAuditEngine(AuditEngine):
             f"authorizes bidder for Tender No. {tender_id}"
         )
         
-        # Retrieve context from vector store
-        docs = self._similarity_search_filtered(vector_store, query, k=3, doc_type="Manufacturer's Authorization Form (MAF)")
+        # Retrieve context from vector store filtered by MAF doc_type to save CPU cycles
+        docs = self._similarity_search_filtered(vector_store, query, k=1, doc_type="Manufacturer's Authorization Form (MAF)")
         context = self._build_context_from_docs(docs)
 
         prompt = ChatPromptTemplate.from_template("""
@@ -457,10 +562,11 @@ class LocalRAGAuditEngine(AuditEngine):
         Important: Output ONLY the raw JSON block. No markdown wrapper, no extra text.
         """)
 
-        chain = prompt | self.llm | self.json_parser
+        chain = prompt | self.llm
         
         try:
-            result = chain.invoke({"tender_id": tender_id, "context": context})
+            resp = chain.invoke({"tender_id": tender_id, "context": context})
+            result = parse_json_safely(resp.content)
             return MAFResult(
                 status=result.get("status", MAF_MISSING),
                 evidence=result.get("evidence", "No valid MAF evidence returned by local RAG engine."),
@@ -473,89 +579,206 @@ class LocalRAGAuditEngine(AuditEngine):
             return super().validate_maf([], {}, tender_id)
 
     def evaluate_pqc_rag(self, vector_store: Chroma, pqc_reqs: List[Dict[str, Any]]) -> List[PQCResult]:
-        """Audits Pre-Qualification Criteria (PQC) using local RAG."""
-        results = []
+        """Audits Pre-Qualification Criteria (PQC) using local RAG (batched in a single LLM call to save CPU time)."""
+        if not pqc_reqs:
+            return []
+
+        # 1. Gather context docs for all PQC requirements
+        combined_docs = []
+        params_str = ""
+        req_mapping = {}
+
         for req in pqc_reqs:
             key = req["key"]
             label = req["label"]
             threshold = req.get("threshold")
             unit = req.get("unit", "")
-            section = req.get("section", "")
             
-            # Formulate semantic queries
+            # Formulate queries and map keys
             if key == "experience":
                 query = "years of experience supplying installing networking equipment PSU Government completion certificate"
                 requirement_str = f"≥ {int(threshold)} {unit}"
+                doc_type = "Experience / Past Performance Certificate"
             elif key == "turnover":
                 query = "audited balance sheet annual financial turnover profit and loss statement Crore"
                 requirement_str = f"≥ INR {threshold:g} Crore"
+                doc_type = "Audited Balance Sheet"
             else:
                 query = f"{label} compliance requirement documentation verification certificate"
                 requirement_str = f"{threshold} {unit}" if threshold is not None else "Required"
+                doc_type = None
 
-            doc_type = None
-            if key == "experience":
-                doc_type = "Experience / Past Performance Certificate"
-            elif key == "turnover":
-                doc_type = "Audited Balance Sheet"
+            req_mapping[key] = {
+                "req": req,
+                "requirement_str": requirement_str
+            }
+            params_str += f"- Parameter Key: \"{key}\", Label: \"{label}\", Required: {requirement_str}\n"
 
-            docs = self._similarity_search_filtered(vector_store, query, k=3, doc_type=doc_type)
-            context = self._build_context_from_docs(docs)
+            # Search across relevant doc_type chunks to save CPU cycles
+            docs = self._similarity_search_filtered(vector_store, query, k=2, doc_type=doc_type)
+            combined_docs.extend(docs)
 
-            prompt = ChatPromptTemplate.from_template("""
-            You are a PSU procurement auditor. Auditing PQC Parameter: "{label}" (Requirement: {requirement_str}).
-            
-            Review the context below:
-            ---
-            {context}
-            ---
-            
-            Evaluate if the vendor satisfies this requirement.
-            Find the actual value/status offered by the vendor for the parameter "{label}" and compare it to the required "{requirement_str}".
-            
-            Return a JSON object with:
-            {{
-                "provided": "Description of what they actually provided (e.g. '14 years of experience' or 'INR 1,240 Crore average turnover')",
-                "passed": true/false (whether provided satisfies the threshold/requirement),
-                "source_file": "Filename of the certificate/balance sheet",
-                "page": 1 (integer page number of the certificate/balance sheet)
-            }}
-            
-            Important: Output ONLY the raw JSON block. No markdown, no extra text.
-            """)
+        # 2. Build joint context
+        context = self._build_context_from_docs(combined_docs)
 
-            chain = prompt | self.llm | self.json_parser
-            
-            try:
-                res = chain.invoke({
-                    "label": label,
-                    "requirement_str": requirement_str,
-                    "context": context
-                })
-                
-                # Check for bid rule positions for compliance page tracing
+        prompt = ChatPromptTemplate.from_template("""
+        You are a PSU procurement auditor. Your job is to verify if the vendor satisfies the Pre-Qualification Criteria (PQC) requirements.
+        
+        Here are the parameters to check:
+        {parameters}
+        
+        Review the context below:
+        ---
+        {context}
+        ---
+        
+        For each parameter in the input list, evaluate if the vendor satisfies the requirement.
+        Determine the actual value/status offered by the vendor and compare it to the required threshold.
+        
+        Return a JSON object containing a single key 'pqc' which maps to a list. Each item in the list must represent one PQC parameter and have the following keys:
+        - "key": (exact key from the input list, e.g. "experience" or "turnover")
+        - "provided": (string description of what they actually provided, e.g. '14 years of experience' or 'INR 1,240 Crore average turnover')
+        - "passed": (true/false, whether the provided value satisfies the requirement)
+        - "source_file": (string filename of the certificate/balance sheet)
+        - "page": (integer page number of the certificate/balance sheet)
+        
+        Important: Output ONLY the raw JSON block. No explanation.
+        """)
+
+        try:
+            chain = prompt | self.llm
+            resp = chain.invoke({
+                "parameters": params_str,
+                "context": context
+            })
+            res = parse_json_safely(resp.content)
+
+            pqc_map = {}
+            for item in res.get("pqc", []):
+                if isinstance(item, dict) and "key" in item:
+                    pqc_map[str(item["key"]).lower().strip()] = item
+
+            results = []
+            for req in pqc_reqs:
+                key = req["key"]
+                label = req["label"]
+                section = req.get("section", "")
+                map_info = req_mapping[key]
+                requirement_str = map_info["requirement_str"]
+
+                # Setup target bid positions
                 bid_file, bid_page = "", 1
                 bid_pos = self._find_bid_pqc_pos(key)
                 if bid_pos is not None:
                     bid_file, bid_page = self._find_file_and_page_for_bid_match(bid_pos)
 
-                results.append(PQCResult(
-                    label=label,
-                    required=requirement_str,
-                    provided=res.get("provided", "[NOT FOUND]"),
-                    passed=bool(res.get("passed", False)),
-                    section=section,
-                    file=res.get("source_file", ""),
-                    page=res.get("page", 1),
-                    bid_file=bid_file,
-                    bid_page=bid_page
-                ))
-            except Exception as e:
-                logger.error(f"PQC RAG audit failed for {key}: {e}")
-                # Fall back to base audit logic
-                results.extend(super().evaluate_pqc([req], vector_store.get()["documents"][0] if vector_store.get()["documents"] else "", True))
-                
-        return results
+                llm_item = pqc_map.get(key.lower().strip())
+                if llm_item:
+                    results.append(PQCResult(
+                        label=label,
+                        required=requirement_str,
+                        provided=llm_item.get("provided", "[NOT FOUND]"),
+                        passed=bool(llm_item.get("passed", False)),
+                        section=section,
+                        file=llm_item.get("source_file", ""),
+                        page=llm_item.get("page", 1),
+                        bid_file=bid_file,
+                        bid_page=bid_page
+                    ))
+                else:
+                    # Fallback to individual check if missing from batch response
+                    results.append(self._evaluate_single_pqc_rag(vector_store, req))
+            return results
+
+        except Exception as e:
+            logger.error(f"Batch PQC extraction failed: {e}. Falling back to individual extraction.")
+            # Fall back to individual checks
+            results = []
+            for req in pqc_reqs:
+                results.append(self._evaluate_single_pqc_rag(vector_store, req))
+            return results
+
+    def _evaluate_single_pqc_rag(self, vector_store: Chroma, req: Dict[str, Any]) -> PQCResult:
+        """Audits a single Pre-Qualification Criteria (PQC) using local RAG (internal fallback helper)."""
+        key = req["key"]
+        label = req["label"]
+        threshold = req.get("threshold")
+        unit = req.get("unit", "")
+        section = req.get("section", "")
+        
+        if key == "experience":
+            query = "years of experience supplying installing networking equipment PSU Government completion certificate"
+            requirement_str = f"≥ {int(threshold)} {unit}"
+            doc_type = "Experience / Past Performance Certificate"
+        elif key == "turnover":
+            query = "audited balance sheet annual financial turnover profit and loss statement Crore"
+            requirement_str = f"≥ INR {threshold:g} Crore"
+            doc_type = "Audited Balance Sheet"
+        else:
+            query = f"{label} compliance requirement documentation verification certificate"
+            requirement_str = f"{threshold} {unit}" if threshold is not None else "Required"
+            doc_type = None
+
+        docs = self._similarity_search_filtered(vector_store, query, k=2, doc_type=doc_type)
+        context = self._build_context_from_docs(docs)
+
+        prompt = ChatPromptTemplate.from_template("""
+        You are a PSU procurement auditor. Auditing PQC Parameter: "{label}" (Requirement: {requirement_str}).
+        
+        Review the context below:
+        ---
+        {context}
+        ---
+        
+        Evaluate if the vendor satisfies this requirement.
+        Find the actual value/status offered by the vendor for the parameter "{label}" and compare it to the required "{requirement_str}".
+        
+        Return a JSON object with:
+        {{
+            "provided": "Description of what they actually provided (e.g. '14 years of experience' or 'INR 1,240 Crore average turnover')",
+            "passed": true/false (whether provided satisfies the threshold/requirement),
+            "source_file": "Filename of the certificate/balance sheet",
+            "page": 1 (integer page number of the certificate/balance sheet)
+        }}
+        
+        Important: Output ONLY the raw JSON block. No markdown, no extra text.
+        """)
+
+        chain = prompt | self.llm
+        
+        try:
+            resp = chain.invoke({
+                "label": label,
+                "requirement_str": requirement_str,
+                "context": context
+            })
+            res = parse_json_safely(resp.content)
+            
+            bid_file, bid_page = "", 1
+            bid_pos = self._find_bid_pqc_pos(key)
+            if bid_pos is not None:
+                bid_file, bid_page = self._find_file_and_page_for_bid_match(bid_pos)
+
+            return PQCResult(
+                label=label,
+                required=requirement_str,
+                provided=res.get("provided", "[NOT FOUND]"),
+                passed=bool(res.get("passed", False)),
+                section=section,
+                file=res.get("source_file", ""),
+                page=res.get("page", 1),
+                bid_file=bid_file,
+                bid_page=bid_page
+            )
+        except Exception as e:
+            logger.error(f"Single PQC RAG audit failed for {key}: {e}")
+            # Fall back to base regex checker
+            try:
+                raw_docs = vector_store.get()
+                doc_text = raw_docs["documents"][0] if raw_docs["documents"] else ""
+            except Exception:
+                doc_text = ""
+            return super().evaluate_pqc([req], doc_text, True)[0]
 
     def extract_spec_rag(self, vector_store: Chroma, spec: Dict[str, Any], mandatory: bool) -> SpecResult:
         """Extracts and audits a specific technical parameter using local RAG."""
@@ -566,7 +789,7 @@ class LocalRAGAuditEngine(AuditEngine):
         
         # Search queries
         query = f"Technical specifications proposed model parameter value: {label}"
-        docs = self._similarity_search_filtered(vector_store, query, k=3, doc_type="Technical Datasheet / Bid")
+        docs = self._similarity_search_filtered(vector_store, query, k=2, doc_type="Technical Datasheet / Bid")
         context = self._build_context_from_docs(docs)
 
         prompt = ChatPromptTemplate.from_template("""
@@ -596,7 +819,7 @@ class LocalRAGAuditEngine(AuditEngine):
         Important: Output ONLY the raw JSON block. No markdown, no extra text.
         """)
 
-        chain = prompt | self.llm | self.json_parser
+        chain = prompt | self.llm
         
         # Setup target bid positions
         bid_file, bid_page = "", 1
@@ -605,12 +828,13 @@ class LocalRAGAuditEngine(AuditEngine):
             bid_file, bid_page = self._find_file_and_page_for_bid_match(bid_pos)
 
         try:
-            res = chain.invoke({
+            resp = chain.invoke({
                 "label": label,
                 "required": required,
                 "unit": unit,
                 "context": context
             })
+            res = parse_json_safely(resp.content)
             
             provided_val = res.get("provided", "[DATA LACKING]")
             status = res.get("status", "lacking")
@@ -647,7 +871,7 @@ class LocalRAGAuditEngine(AuditEngine):
         labels = [s["label"] for s in specs]
         query = "Technical datasheet specifications: " + ", ".join(labels[:5])
         
-        docs = self._similarity_search_filtered(vector_store, query, k=5, doc_type="Technical Datasheet / Bid")
+        docs = self._similarity_search_filtered(vector_store, query, k=2, doc_type="Technical Datasheet / Bid")
         context = self._build_context_from_docs(docs)
         
         prompt = ChatPromptTemplate.from_template("""
@@ -685,11 +909,12 @@ class LocalRAGAuditEngine(AuditEngine):
             params_str += f"- Parameter: \"{s['label']}\", Operator: \"{s['op']}\", Required: {req_val} {s.get('unit', '')}\n"
             
         try:
-            chain = prompt | self.llm | self.json_parser
-            res = chain.invoke({
+            chain = prompt | self.llm
+            resp = chain.invoke({
                 "parameters": params_str,
                 "context": context
             })
+            res = parse_json_safely(resp.content)
             
             # Map LLM results back to SpecResult objects
             spec_map = {}
@@ -741,7 +966,7 @@ class LocalRAGAuditEngine(AuditEngine):
     def detect_deviations_rag(self, vector_store: Chroma) -> List[str]:
         """Identifies vendor deviations semantically using local RAG."""
         query = "deviation statement cannot supply instead we will provide not supported alternative exception"
-        docs = self._similarity_search_filtered(vector_store, query, k=4, doc_type="Deviation Statement")
+        docs = self._similarity_search_filtered(vector_store, query, k=2, doc_type="Deviation Statement")
         context = self._build_context_from_docs(docs)
 
         prompt = ChatPromptTemplate.from_template("""
@@ -760,10 +985,11 @@ class LocalRAGAuditEngine(AuditEngine):
         Return ONLY a JSON list (e.g. ["Deviation 1...", "Deviation 2..."]). No markdown wrapper, no extra text.
         """)
 
-        chain = prompt | self.llm | self.json_parser
+        chain = prompt | self.llm
         
         try:
-            deviations = chain.invoke({"context": context})
+            resp = chain.invoke({"context": context})
+            deviations = parse_json_safely(resp.content)
             if isinstance(deviations, list):
                 return [str(d) for d in deviations[:6]]
             return []

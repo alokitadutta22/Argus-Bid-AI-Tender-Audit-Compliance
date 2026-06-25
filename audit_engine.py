@@ -392,14 +392,15 @@ def extract_text_from_pdf_bytes(data: bytes, enable_ocr: bool = False) -> Tuple[
                         if ocr_text:
                             ptext = ocr_text + "\n[OCR Fallback Content]"
                     
-                    # Extract tables
-                    tables = page.extract_tables()
+                    # Extract tables only if table structures (lines or rects) are present
                     md_tables = []
-                    if tables:
-                        for tbl in tables:
-                            tbl_md = format_table_as_markdown(tbl)
-                            if tbl_md:
-                                md_tables.append(tbl_md)
+                    if page.lines or page.rects:
+                        tables = page.extract_tables()
+                        if tables:
+                            for tbl in tables:
+                                tbl_md = format_table_as_markdown(tbl)
+                                if tbl_md:
+                                    md_tables.append(tbl_md)
                                 
                     if md_tables:
                         ptext += "\n\n### Extracted Tables:\n" + "\n\n".join(md_tables)
@@ -663,14 +664,16 @@ class AuditEngine:
         if bre:
             for m in re.finditer(bre, bid_text, re.I):
                 window = bid_text[max(0, m.start() - 60): m.start()].lower()
-                if any(k in window for k in spec["bid_kw"]):
+                if any(k in window for k in spec.get("bid_kw", [])):
                     return m.start()
             m = re.search(bre, bid_text, re.I)
             if m:
                 return m.start()
 
-        for kw in spec["bid_kw"]:
-            idx = low.find(kw.lower())
+        for kw in spec.get("bid_kw") or [spec.get("label"), spec.get("key")]:
+            if not kw:
+                continue
+            idx = low.find(str(kw).lower())
             if idx != -1:
                 return idx
         return None
