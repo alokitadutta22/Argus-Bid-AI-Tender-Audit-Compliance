@@ -46,6 +46,7 @@ except Exception:
 
 try:
     import pytesseract  # type: ignore
+    pytesseract.get_tesseract_version()
     HAS_PYTESSERACT = True
 except Exception:
     HAS_PYTESSERACT = False
